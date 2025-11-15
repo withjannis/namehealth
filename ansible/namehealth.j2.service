@@ -4,8 +4,9 @@ After=network.target
 
 [Service]
 Type=simple
+WorkingDirectory=/root/namehealth
 
-ExecStart=/root/namehealth/venv/bin/fastapi run src/backend/main.py
+ExecStart=venv/bin/fastapi run src/backend/main.py
 Restart=on-failure
 
 [Install]
