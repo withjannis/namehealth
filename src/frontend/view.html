@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- early stabilization script: set CSS defaults so layout doesn't change later -->
+  <script>
+    (function(){
+      // always reserve scrollbar gutter early
+      document.documentElement.style.setProperty('--reserved-scrollbar', '18px');
+      // default sidebar width (used by CSS media rule)
+      document.documentElement.style.setProperty('--sidebar-width', '300px');
+    })();
+  </script>
+   <title>NameHealth.org</title>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <link rel="stylesheet" href="https://www.w3schools.com/w3css/5/w3.css">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+   <style>
+  :root{
+    /* unified, accessible dark palette */
+    --bg: #0b1220;
+    --panel: #0f1724;
+    --card: #0f2130;
+    --muted: #9aa4ad;
+    --accent: #06b6d4;
+    --accent-2: #1e88e5;
+    --text: #e6eef3;
+    --topbar: #07101a;
+    --sidebar: #0d1822;
+    --danger: #ef4444;
+
+    /* layout sizes */
+    --topbar-height: 56px;
+    --sidebar-width: 300px;
+  }
+
+  /* Stabilize layout to avoid tiny horizontal shifts when scrollbars or overlays appear.
+     - keep a reserved gutter for the scrollbar
+     - add padding-right equal to (100vw - 100%) which equals scrollbar width when present */
+  /* reserve vertical gutter and stabilize scrollbar behavior */
+  html {
+    box-sizing: border-box;
+    overflow-y: scroll;                     /* always reserve the vertical gutter */
+    scrollbar-gutter: stable both-edges;    /* modern browsers keep gutter reserved */
+    -webkit-font-smoothing: antialiased;   /* reduce layout jitter from font rendering */
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+
+  /* base typography / layout */
+  html,body{
+    font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: var(--bg);
+    color: var(--text);
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    width:100%;
+    overflow-x:hidden; /* prevent accidental horizontal scroll on insert */
+  }
+
+  /* main content: account for topbar height */
+  .w3-main {
+    margin-top: var(--topbar-height);
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    padding-left: 0;
+  }
+
+  .content-wrapper {
+    /* make width stable: fixed centered column, never full-bleed */
+    max-width:1100px;
+    width:100%;
+    box-sizing:border-box;
+    margin:18px auto;
+    padding:18px;
+    padding-right: 18px; /* fixed gutter instead of calc(100vw - 100%) */
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - var(--topbar-height));
+  }
+
+  /* keep content readable on wide screens by adding interior offset */
+  @media (min-width: 901px) {
+    /* keep a stable left offset on wide screens (no JS toggle required) */
+    .content-wrapper { padding-left: calc(var(--sidebar-width) + 18px); }
+  }
+
+  /* ensure footer is pushed to bottom when content is short */
+  .site-footer { margin-top: auto; }
+
+  header.site-header { display:block; padding:8px 0 18px 0; }
+  h1#x-domain-name { margin:0 0 6px 0; font-weight:600; letter-spacing:0.2px; color:var(--text); }
+  .subtitle{ color:var(--muted); font-size:0.95rem; margin-bottom:12px;
+    min-height: 1.6rem;        /* reserve vertical space */
+    line-height: 1.6rem;
+    display:block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+
+  /* search bar placed below title */
+  form#search-form{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px }
+  form#search-form input, form#search-form select {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius:6px;
+    padding:10px 8px;
+  }
+  form#search-form .w3-button {
+    background: var(--accent);
+    border:none;
+    color: #012226;
+    padding:10px 14px;
+    border-radius:6px;
+  }
+
+  /* records area */
+  #x-records { display:block; }
+  .record-card {
+     background: var(--card);
+     border-radius:8px;
+     padding:12px;
+     margin-bottom:12px;
+     box-shadow: 0 6px 18px rgba(2,6,10,0.5);
+     color:var(--text);
+     border: 1px solid rgba(255,255,255,0.02);
+
+     /* start slightly lowered & transparent */
+     opacity: 1;
+     transform: translateY(0);
+     transition: opacity 220ms ease, transform 220ms ease;
+     will-change: opacity, transform;
+   }
+  .record-card.entering {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  .record-meta { display:flex; gap:12px; flex-wrap:wrap; color:var(--muted); font-size:0.9rem; margin-bottom:8px }
+  .record-data { display:flex; gap:16px; flex-wrap:wrap }
+  .data-item {
+    background: var(--panel);
+    padding:8px;
+    border-radius:6px;
+    color:var(--text);
+    min-width:120px;
+    border: 1px solid rgba(255,255,255,0.02);
+  }
+  pre.data-pre {
+    margin:0;
+    background:transparent;
+    border:none;
+    color:var(--text);
+    white-space:pre-wrap;
+    font-family: inherit;
+    font-size:0.95rem;
+  }
+
+  /* truncated value styling */
+  .data-item .value {
+    font-weight:600;
+    display:inline-block;
+    max-width:44ch;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    vertical-align:middle;
+  }
+  .data-item .copy-btn {
+    margin-left:8px;
+    font-size:0.75rem;
+    color:var(--muted);
+    background:transparent;
+    border:none;
+    cursor:pointer;
+    padding:4px;
+  }
+  .copy-btn:active { transform:translateY(1px); }
+
+  /* subtle accents and interactive */
+  .w3-button:hover { filter:brightness(1.06); transform:translateY(-1px); transition:all .12s ease; }
+  .w3-panel { background: transparent; color: var(--muted); }
+
+  /* SIDEBAR: fixed, below topbar on large screens; hidden on small screens */
+  .w3-sidebar {
+    position: fixed;
+    top: var(--topbar-height);
+    left: 0;
+    height: calc(100vh - var(--topbar-height));
+    width: var(--sidebar-width);
+    z-index: 30;
+    box-shadow: 0 6px 30px rgba(0,0,0,0.5);
+    padding-top: 12px;
+    box-sizing: border-box;
+    overflow-y: auto; /* scroll inside sidebar */
+    display: block;
+    background: var(--sidebar);
+    color: var(--text);
+  }
+
+  /* overlay hidden by default; shown when sidebar open on small screens */
+  .w3-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 29;
+  }
+
+  /* mobile: hide sidebar and show overlay when opening */
+  @media (max-width: 900px) {
+    .w3-sidebar { display: none; position: fixed; top: var(--topbar-height); left: 0; height: calc(100vh - var(--topbar-height)); }
+    .w3-overlay { display: none; }
+    .w3-main { margin-left: 0; }
+    .content-wrapper { padding-left: 18px !important; } /* avoid being hidden under sidebar */
+  }
+
+  /* only apply left content padding when sidebar is present (keeps layout stable) */
+  body.has-sidebar .content-wrapper { padding-left: calc(var(--sidebar-width) + 18px); }
+
+  /* small screens */
+  @media (max-width:900px){
+    .w3-main{ margin-left:0 }
+    .content-wrapper{ padding:12px; margin-top:60px }
+    nav.w3-sidebar{ display:none }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top container -->
+<div class="w3-bar w3-top w3-black w3-large" style="z-index:4">
+  <button class="w3-bar-item w3-button w3-hide-large w3-hover-none w3-hover-text-light-grey" onclick="w3_open();"><i class="fa fa-bars"></i> Menu</button>
+  <span class="w3-bar-item w3-right">NameHealth</span>
+</div>
+
+<!-- Sidebar/menu -->
+<nav class="w3-sidebar w3-collapse w3-animate-left" id="mySidebar" aria-hidden="false">
+  <div class="w3-container">
+    <h5 style="margin-top:0">Dashboard</h5>
+  </div>
+  <div class="w3-bar-block">
+    <a href="#" class="w3-bar-item w3-button w3-padding w3-blue">Overview</a>
+  </div>
+</nav>
+
+<div class="w3-overlay" id="myOverlay" onclick="w3_close()"></div>
+
+<!-- PAGE CONTENT -->
+<div class="w3-main">
+  <div class="content-wrapper">
+
+    <header class="site-header">
+      <h1 id="x-domain-name">Search for domain...</h1>
+      <div class="subtitle" id="x-subtitle">Nameserver • Type</div>
+
+      <!-- search bar BELOW the title as requested -->
+      <form id="search-form" aria-label="Search domain records">
+        <input id="search-domain" class="w3-input w3-border" type="search" placeholder="example.com" style="width:260px;" />
+        <select id="search-rtype" class="w3-select" style="width:140px;">
+          <option value="A">A</option>
+          <option value="AAAA">AAAA</option>
+          <option value="MX">MX</option>
+          <option value="DS">DS</option>
+          <option value="DNSKEY">DNSKEY</option>
+          <option value="TXT">TXT</option>
+          <option value="CNAME">CNAME</option>
+        </select>
+        <button type="submit" class="w3-button w3-blue">Search</button>
+      </form>
+    </header>
+
+    <div class="w3-container w3-padding-small" style="background:transparent;padding-left:0;padding-right:0;margin-bottom:8px;">
+      <div style="display:flex;gap:24px;flex-wrap:wrap">
+        <div><strong>FQDN:</strong> <span id="x-fqdn"></span></div>
+        <div><strong>Last probe:</strong> <span id="x-timestamp"></span></div>
+        <div><strong>Nameserver:</strong> <span id="x-ns"></span></div>
+        <div><strong>Record type:</strong> <span id="x-recordtype"></span></div>
+      </div>
+    </div>
+
+    <div id="x-records"></div>
+
+    <footer class="w3-container w3-padding-16 site-footer" style="background:transparent;color:var(--muted);">
+      © NameHealth 2025
+    </footer>
+
+  </div>
+</div>
+
+<script>
+/* Sidebar controls */
+var mySidebar = document.getElementById("mySidebar");
+var overlayBg = document.getElementById("myOverlay");
+
+// initialize sidebar state early (keeps layout stable)
+(function(){
+  // if viewport wide, keep sidebar considered present
+  if (window.innerWidth > 900) {
+    document.body.classList.add('has-sidebar');
+    // ensure sidebar is visible on wide screens
+    if (mySidebar) mySidebar.style.display = 'block';
+  } else {
+    // small screens: hide sidebar initially
+    if (mySidebar) mySidebar.style.display = 'none';
+    if (overlayBg) overlayBg.style.display = 'none';
+  }
+})();
+
+function w3_open() {
+  // mobile: show overlay + sidebar
+  if (window.innerWidth <= 900) {
+    if (mySidebar) mySidebar.style.display = 'block';
+    if (overlayBg) overlayBg.style.display = 'block';
+    if (mySidebar) mySidebar.setAttribute('aria-hidden', 'false');
+    return;
+  }
+
+  // desktop: toggle presence class to collapse/expand sidebar space
+  if (document.body.classList.contains('has-sidebar')) {
+    document.body.classList.remove('has-sidebar');
+  } else {
+    document.body.classList.add('has-sidebar');
+  }
+}
+
+function w3_close() {
+  // mobile: hide sidebar + overlay
+  if (mySidebar) mySidebar.style.display = 'none';
+  if (overlayBg) overlayBg.style.display = 'none';
+  if (mySidebar) mySidebar.setAttribute('aria-hidden', 'true');
+}
+
+// close sidebar/overlay when resizing to avoid stuck states
+window.addEventListener('resize', function() {
+  if (window.innerWidth > 900) {
+    // on wide screens make sure overlay hidden and sidebar visible
+    if (overlayBg) overlayBg.style.display = 'none';
+    if (mySidebar) mySidebar.style.display = 'block';
+    document.body.classList.add('has-sidebar');
+  } else {
+    // on narrow screens hide sidebar initially (until user opens it)
+    if (mySidebar) mySidebar.style.display = 'none';
+    if (overlayBg) overlayBg.style.display = 'none';
+  }
+});
+</script>
+
+<script>
+/* human readable time difference */
+function timeDifference(previous) {
+    var current = Date.now();
+    var msPerMinute = 60 * 1000;
+    var msPerHour = msPerMinute * 60;
+    var msPerDay = msPerHour * 24;
+    var msPerMonth = msPerDay * 30;
+    var msPerYear = msPerDay * 365;
+    var elapsed = current - (previous * 1000);
+    if (elapsed < msPerMinute) return Math.round(elapsed/1000) + ' seconds ago';
+    if (elapsed < msPerHour) return Math.round(elapsed/msPerMinute) + ' minutes ago';
+    if (elapsed < msPerDay) return Math.round(elapsed/msPerHour) + ' hours ago';
+    if (elapsed < msPerMonth) return 'approximately ' + Math.round(elapsed/msPerDay) + ' days ago';
+    if (elapsed < msPerYear) return 'approximately ' + Math.round(elapsed/msPerMonth) + ' months ago';
+    return 'approximately ' + Math.round(elapsed/msPerYear ) + ' years ago';
+}
+
+/* helper: truncate string to n chars (adds ellipsis) */
+function truncateString(s, n = 64) {
+  if (s === null || s === undefined) return '';
+  const str = String(s);
+  if (str.length <= n) return str;
+  return str.slice(0, n - 1) + '…';
+}
+
+/* helper to render a single data key/value (with truncation + copy) */
+function elDataItem(label, value) {
+  const d = document.createElement('div');
+  d.className = 'data-item';
+
+  let full = value;
+  if (typeof value === 'object' && value !== null) {
+    try { full = JSON.stringify(value); } catch (e) { full = String(value); }
+  } else {
+    full = String(value ?? '');
+  }
+
+  const truncated = truncateString(full, 64);
+
+  d.innerHTML = `
+    <div style="font-size:0.85rem;color:var(--muted)">${label}</div>
+    <div style="margin-top:6px;display:flex;align-items:center;gap:6px">
+      <span class="value" title="${escapeHtml(full)}">${escapeHtml(truncated)}</span>
+      ${full.length > truncated.length ? '<button class="copy-btn" title="Copy full value">Copy</button>' : ''}
+    </div>
+  `;
+
+  // attach copy behaviour if present
+  const btn = d.querySelector('.copy-btn');
+  if (btn) {
+    btn.addEventListener('click', async (ev) => {
+      ev.preventDefault();
+      try {
+        await navigator.clipboard.writeText(full);
+        const old = btn.textContent;
+        btn.textContent = 'Copied';
+        setTimeout(() => btn.textContent = old, 1200);
+      } catch (err) {
+        btn.textContent = 'Err';
+        setTimeout(() => btn.textContent = 'Copy', 1200);
+      }
+    });
+  }
+
+  return d;
+}
+
+/* small helper to escape text for use in title/textContent when injecting HTML */
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/* render record without dumping JSON */
+function renderRecord(rec) {
+  const card = document.createElement('div');
+  card.className = 'record-card';
+
+  const meta = document.createElement('div');
+  meta.className = 'record-meta';
+  meta.innerHTML = `<div><strong>${rec.type || rec.rtype || ''}</strong></div>
+                    <div>${rec.name || rec.owner || ''}</div>
+                    <div>ttl: ${rec.ttl ?? '-'}</div>
+                    <div>${(rec.class ?? rec.c) || ''}</div>`;
+  card.appendChild(meta);
+
+  const dataRow = document.createElement('div');
+  dataRow.className = 'record-data';
+
+  const data = rec.data ?? {};
+
+  // type-specific rendering
+  const rtype = (rec.type || rec.rtype || '').toUpperCase();
+  if (rtype === 'A' || rtype === 'AAAA') {
+    if (Array.isArray(data)) {
+      data.forEach(a => dataRow.appendChild(elDataItem('addr', a.addr || a)));
+    } else {
+      dataRow.appendChild(elDataItem('addr', data.addr || JSON.stringify(data)));
+    }
+  } else if (rtype === 'MX') {
+    if (Array.isArray(data)) {
+      data.forEach(m => {
+        dataRow.appendChild(elDataItem('preference', m.preference));
+        dataRow.appendChild(elDataItem('exchange', m.exchange));
+      });
+    } else {
+      dataRow.appendChild(elDataItem('preference', data.preference ?? '-'));
+      dataRow.appendChild(elDataItem('exchange', data.exchange ?? '-'));
+    }
+  } else if (rtype === 'DS') {
+    dataRow.appendChild(elDataItem('key_tag', data.key_tag ?? data.keyTag ?? '-'));
+    dataRow.appendChild(elDataItem('alg', data.algorithm ?? '-'));
+    dataRow.appendChild(elDataItem('digest_type', data.digest_type ?? data.digestType ?? '-'));
+    dataRow.appendChild(elDataItem('digest', data.digest ?? '-'));
+  } else if (rtype === 'DNSKEY') {
+    dataRow.appendChild(elDataItem('flags', data.flags ?? '-'));
+    dataRow.appendChild(elDataItem('protocol', data.protocol ?? '-'));
+    dataRow.appendChild(elDataItem('algorithm', data.algorithm ?? '-'));
+    dataRow.appendChild(elDataItem('public_key', data.public_key ?? '-'));
+  } else if (rtype === 'TXT') {
+    // show TXT strings
+    if (Array.isArray(data)) {
+      data.forEach(t => dataRow.appendChild(elDataItem('txt', Array.isArray(t) ? t.join(' ') : t)));
+    } else if (typeof data === 'string') {
+      dataRow.appendChild(elDataItem('txt', data));
+    } else {
+      // generic fallback
+      for (const k in data) dataRow.appendChild(elDataItem(k, data[k]));
+    }
+  } else {
+    // generic display for unknown types: show fields as data items
+    if (Array.isArray(data)) {
+      data.forEach(d => {
+        for (const k in d) dataRow.appendChild(elDataItem(k, d[k]));
+      });
+    } else if (typeof data === 'object' && data !== null) {
+      for (const k in data) dataRow.appendChild(elDataItem(k, data[k]));
+    } else {
+      dataRow.appendChild(elDataItem('value', String(data)));
+    }
+  }
+
+  card.appendChild(dataRow);
+  return card;
+}
+
+function clearData() {
+  // Clear previous UI data immediately
+  document.getElementById("x-domain-name").textContent = 'Search for domain...';
+  document.getElementById("x-fqdn").textContent = '';
+  document.getElementById("x-timestamp").textContent = '';
+  document.getElementById("x-ns").textContent = '';
+  document.getElementById("x-recordtype").textContent = '';
+  document.getElementById("x-subtitle").textContent = 'Nameserver • Type';
+}
+
+async function getData(domain, record_type) {
+  //const url = `http://127.0.0.1:8000/api/v1/domain/${encodeURIComponent(domain)}/${encodeURIComponent(record_type)}`;
+  const url = `/api/v1/domain/${encodeURIComponent(domain)}/${encodeURIComponent(record_type)}`;
+
+  const recordsEl = document.getElementById("x-records");
+
+  // Show loading state
+  recordsEl.innerHTML = '<div class="w3-panel" style="background:transparent;color:var(--muted)">Loading…</div>';
+
+  try {
+    // HEAD check
+    const headResp = await fetch(url, { method: "HEAD" });
+    if (headResp.status === 204) {
+      recordsEl.innerHTML = `<div class="w3-panel">No data found for ${domain} (${record_type}) in the database. It may not have been probed yet.</div>`;
+      clearData();
+      return;
+    }
+
+    // GET the actual data
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const result = await response.json();
+
+    document.getElementById("x-domain-name").textContent = result.fqdn;
+    document.getElementById("x-fqdn").textContent = result.fqdn;
+    document.getElementById("x-timestamp").textContent = timeDifference(result.timestamp);
+    document.getElementById("x-ns").textContent = result.ns;
+    document.getElementById("x-recordtype").textContent = result.type;
+    document.getElementById("x-subtitle").textContent = `${result.ns} — ${result.type}`;
+
+    recordsEl.innerHTML = '';
+    const list = Array.isArray(result.records) ? result.records : [];
+
+    if (list.length === 0) {
+      recordsEl.innerHTML = '<div class="w3-panel">No records, Nameserver answered with empty response!</div>';
+      return;
+    }
+
+    for (const rec of list) {
+      recordsEl.appendChild(renderRecord(rec));
+    }
+
+  } catch (error) {
+    console.error(error);
+    recordsEl.innerHTML = `<div class="w3-panel w3-red">Error fetching data: ${error.message}</div>`;
+  }
+}
+
+/* search form wiring */
+(function() {
+  const form = document.getElementById('search-form');
+  const domainInput = document.getElementById('search-domain');
+  const rtypeSelect = document.getElementById('search-rtype');
+
+  const params = new URLSearchParams(document.location.search);
+  const initialDomain = params.get('domain') || 'aws.com';
+  const initialRtype = (params.get('rtype') || 'A').toUpperCase();
+
+  domainInput.value = initialDomain;
+  rtypeSelect.value = initialRtype;
+
+  getData(initialDomain, initialRtype);
+
+  form.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const domain = domainInput.value.trim() || 'aws.com';
+    const rtype = (rtypeSelect.value || 'A').toUpperCase();
+
+    const newParams = new URLSearchParams();
+    newParams.set('domain', domain);
+    newParams.set('rtype', rtype);
+    history.replaceState(null, '', `${location.pathname}?${newParams.toString()}`);
+
+    getData(domain, rtype);
+  });
+})();
+</script>
+
+</body>
+</html>
