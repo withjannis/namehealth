@@ -1,7 +1,7 @@
-cd /root/document/
+cd /root/namehealth/
 
 git pull
 
-cd /root/document/ansible/
+cd /root/namehealth/ansible/
 
 ansible-playbook install.yml
