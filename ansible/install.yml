@@ -61,6 +61,7 @@
         - software-properties-common
         - build-essential
         - python3-venv
+        - python3-pip
 
     - name: Install default nginx config
       ansible.builtin.template:
