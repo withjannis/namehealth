@@ -60,6 +60,7 @@
         - curl
         - software-properties-common
         - build-essential
+        - python3-venv
 
     - name: Install default nginx config
       ansible.builtin.template:
@@ -103,7 +104,13 @@
 
     - name: Register certbot
       ansible.builtin.command:
-        cmd: "python3 -m pip install -r requirements.txt"
+        cmd: python3 -m venv venv
+        chdir: /root/namehealth/
+      changed_when: true
+
+    - name: Register certbot
+      ansible.builtin.command:
+        cmd: python3 -m pip install -r requirements.txt
         chdir: /root/namehealth/
       changed_when: true
 
