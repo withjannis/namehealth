@@ -1,0 +1,115 @@
+- name: Install namehealth
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  become: true
+  vars:
+    fqdn_prod: namehealth.withjannis.dev
+
+    fqdn_dev: namehealth.dev.withjannis.dev
+
+    certbot_command_prod: >
+      certbot certonly --standalone --preferred-challenges http
+      --non-interactive --agree-tos -m certbot@imni.ch
+      -d namehealth.withjannis.dev
+    certbot_command_dev: >
+      certbot certonly --test-cert --standalone --preferred-challenges http
+      --non-interactive --agree-tos -m certbot-dev@imni.ch
+      -d namehealth.dev.withjannis.dev
+
+  tasks:
+    - name: Include metadata into metadata
+      ansible.builtin.include_vars:
+        file: /root/metadata.json
+        name: metadata
+
+    - name: Variables for prod
+      ansible.builtin.set_fact:
+        certbot_command: "{{ certbot_command_prod }}"
+        fqdn: "{{ fqdn_prod }}"
+      when: metadata.namehealth.stage == "prod"
+
+    - name: Variables for dev
+      ansible.builtin.set_fact:
+        certbot_command: "{{ certbot_command_dev }}"
+        fqdn: "{{ fqdn_dev }}"
+      when: metadata.namehealth.stage == "dev"
+
+    - name: SSH key
+      ansible.builtin.lineinfile:
+        path: /home/imni/.ssh/authorized_keys
+        line: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM/t9olcjeHJ2LBbo0cXJiK9xbqUoNibs6XNEIE41Oq8 root@gh-action
+
+    - name: Allow all access to tcp port 80
+      community.general.ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      with_items:
+        - "80"
+        - "443"
+
+    - name: Install nginx and more
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - nginx
+        - certbot
+        - python3-certbot-nginx
+        - curl
+        - software-properties-common
+        - build-essential
+
+    - name: Install default nginx config
+      ansible.builtin.template:
+        src: nginx.j2.conf
+        dest: /etc/nginx/sites-enabled/default
+        mode: "0644"
+
+    - name: Stop nginx
+      ansible.builtin.systemd:
+        name: nginx.service
+        state: stopped
+        enabled: true
+
+    - name: Deploy systemd service file
+      ansible.builtin.template:
+        src: namehealth.j2.service
+        dest: /etc/systemd/system/namehealth.service
+        mode: "0644"
+
+    - name: Deploy ssl options
+      ansible.builtin.copy:
+        src: options-ssl-nginx.conf
+        dest: /etc/nginx/options-ssl-nginx.conf
+        mode: "0644"
+
+    - name: Create dhparam
+      ansible.builtin.command:
+        cmd: openssl dhparam -dsaparam -out /etc/nginx/ssl-dhparams.pem 4096
+        creates: /etc/nginx/ssl-dhparams.pem
+
+    - name: Register certbot
+      ansible.builtin.command:
+        cmd: "{{ certbot_command }}"
+      changed_when: true
+
+    - name: Deploy Post hook
+      ansible.builtin.copy:
+        dest: /etc/letsencrypt/renewal-hooks/post/nginx.sh
+        content: systemctl restart nginx.service
+        mode: "0755"
+
+    - name: Start nginx
+      ansible.builtin.systemd:
+        name: nginx.service
+        state: restarted
+        enabled: true
+
+    - name: "Make sure the service is started and enabled via systemd"
+      ansible.builtin.systemd:
+        name: namehealth.service
+        state: restarted
+        enabled: true
+        daemon_reload: true

@@ -1,0 +1,12 @@
+[Unit]
+Description=NameHealth
+After=network.target
+
+[Service]
+Type=simple
+
+ExecStart=echo Hello
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
