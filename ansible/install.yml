@@ -103,15 +103,15 @@
         content: systemctl restart nginx.service
         mode: "0755"
 
-    - name: Register certbot
+    - name: Create python venv
       ansible.builtin.command:
         cmd: python3 -m venv venv
         chdir: /root/namehealth/
       changed_when: true
 
-    - name: Register certbot
+    - name: Install python requirements
       ansible.builtin.command:
-        cmd: python3 -m pip install -r requirements.txt
+        cmd: /root/namehealth/venv/bin/python3 -m pip install -r requirements.txt
         chdir: /root/namehealth/
       changed_when: true
 
