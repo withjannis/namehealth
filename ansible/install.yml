@@ -13,11 +13,11 @@
     certbot_command_prod: >
       certbot certonly --standalone --preferred-challenges http
       --non-interactive --agree-tos -m certbot@imni.ch
-      -d namehealth.org namehealth.withjannis.dev
+      -d namehealth.org -d namehealth.withjannis.dev
     certbot_command_dev: >
       certbot certonly --test-cert --standalone --preferred-challenges http
       --non-interactive --agree-tos -m certbot-dev@imni.ch
-      -d namehealth.org namehealth.dev.withjannis.dev
+      -d namehealth.org -d namehealth.dev.withjannis.dev
 
   tasks:
     - name: Include metadata into metadata
