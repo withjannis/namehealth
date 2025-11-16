@@ -4,18 +4,20 @@
   gather_facts: true
   become: true
   vars:
-    fqdn_prod: namehealth.withjannis.dev
+    fqdn_prod: namehealth.org
+    fqdn_prod2: namehealth.withjannis.dev
 
-    fqdn_dev: namehealth.dev.withjannis.dev
+    fqdn_dev: dev.namehealth.org
+    fqdn_dev2: namehealth.dev.withjannis.dev
 
     certbot_command_prod: >
       certbot certonly --standalone --preferred-challenges http
       --non-interactive --agree-tos -m certbot@imni.ch
-      -d namehealth.withjannis.dev
+      -d namehealth.org namehealth.withjannis.dev
     certbot_command_dev: >
       certbot certonly --test-cert --standalone --preferred-challenges http
       --non-interactive --agree-tos -m certbot-dev@imni.ch
-      -d namehealth.dev.withjannis.dev
+      -d namehealth.org namehealth.dev.withjannis.dev
 
   tasks:
     - name: Include metadata into metadata
@@ -27,12 +29,14 @@
       ansible.builtin.set_fact:
         certbot_command: "{{ certbot_command_prod }}"
         fqdn: "{{ fqdn_prod }}"
+        fqdn2: "{{ fqdn_prod2 }}"
       when: metadata.namehealth.stage == "prod"
 
     - name: Variables for dev
       ansible.builtin.set_fact:
         certbot_command: "{{ certbot_command_dev }}"
         fqdn: "{{ fqdn_dev }}"
+        fqdn2: "{{ fqdn_dev2 }}"
       when: metadata.namehealth.stage == "dev"
 
     - name: SSH key
