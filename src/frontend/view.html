@@ -169,15 +169,16 @@
   }
 
   /* truncated value styling */
-  .data-item .value {
-    font-weight:600;
-    display:inline-block;
-    max-width:44ch;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-    vertical-align:middle;
-  }
+  /*  .data-item .value { */
+  /*    font-weight:600; */
+  /*    display:inline-block; */
+  /*    max-width:44ch; */
+  /*    overflow:hidden; */
+  /*    text-overflow:ellipsis; */
+  /*    white-space:nowrap; */
+  /*    vertical-align:middle; */
+  /*  } */
+
   .data-item .copy-btn {
     margin-left:8px;
     font-size:0.75rem;
@@ -377,7 +378,7 @@ function timeDifference(previous) {
 }
 
 /* helper: truncate string to n chars (adds ellipsis) */
-function truncateString(s, n = 64) {
+function truncateString(s, n) {
   if (s === null || s === undefined) return '';
   const str = String(s);
   if (str.length <= n) return str;
@@ -385,18 +386,11 @@ function truncateString(s, n = 64) {
 }
 
 /* helper to render a single data key/value (with truncation + copy) */
-function elDataItem(label, value) {
+function elDataItem(label, full) {
   const d = document.createElement('div');
   d.className = 'data-item';
 
-  let full = value;
-  if (typeof value === 'object' && value !== null) {
-    try { full = JSON.stringify(value); } catch (e) { full = String(value); }
-  } else {
-    full = String(value ?? '');
-  }
-
-  const truncated = truncateString(full, 64);
+  const truncated = truncateString(full, 44);
 
   d.innerHTML = `
     <div style="font-size:0.85rem;color:var(--muted)">${label}</div>
@@ -415,10 +409,10 @@ function elDataItem(label, value) {
         await navigator.clipboard.writeText(full);
         const old = btn.textContent;
         btn.textContent = 'Copied';
-        setTimeout(() => btn.textContent = old, 1200);
+        setTimeout(() => btn.textContent = old, 500);
       } catch (err) {
         btn.textContent = 'Err';
-        setTimeout(() => btn.textContent = 'Copy', 1200);
+        setTimeout(() => btn.textContent = 'Copy', 500);
       }
     });
   }
