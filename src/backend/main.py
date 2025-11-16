@@ -16,6 +16,29 @@ def generate_html_response():
     return fastapi.responses.HTMLResponse(content=html, status_code=200)
 
 
+@app.get(
+    "/meta/site.webmanifest", response_class=fastapi.responses.FileResponse
+)
+async def site_webmanifest():
+    return fastapi.responses.FileResponse("src/frontend/site.webmanifest")
+
+
+@app.get(
+    "/meta/{icon_name}.png", response_class=fastapi.responses.FileResponse
+)
+async def favicon(icon_name: str):
+    if icon_name in [
+        "favicon-16x16",
+        "favicon-32x32",
+        "apple-touch-icon",
+        "android-chrome-192x192",
+        "android-chrome-512x512",
+    ]:
+        return fastapi.responses.FileResponse(f"src/frontend/{icon_name}.png")
+
+    return fastapi.responses.Response(status_code=404)
+
+
 @app.get("/", response_class=fastapi.responses.HTMLResponse)
 async def view_domain():
     return generate_html_response()
