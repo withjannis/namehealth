@@ -1,0 +1,17 @@
+# editor files
+.vscode
+.DS_Store
+
+# Ansible 
+.ansible
+
+# Rust
+/target
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Rust test files
+_*.rs
