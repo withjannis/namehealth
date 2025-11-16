@@ -92,9 +92,11 @@ async def get_domain(domain: str, record_type: str):
 @app.head("/api/v1/domain/{domain}/{_}")
 async def head_domain(domain: str, _: str):
     """HEAD request to check if domain record exists.
+
     Args:
         domain (str): domain name
         record_type (str): DNS record type
+
     Returns:
         Response: 200 if exists, 204 if not
     """
