@@ -12,8 +12,6 @@ use aws_config::{self, Region};
 use aws_sdk_dynamodb::types::AttributeValue;
 use chrono::Utc;
 
-use crate::dns::get_dns_rcrd;
-
 mod dns;
 mod db;
 
@@ -30,7 +28,7 @@ async fn collect_records(qname: &str, nsaddr: SocketAddr, rtype: Rtype) -> Vec<V
 
     match rtype {
         Rtype::A => {
-            let rcrds = get_dns_rcrd::<rdata::A>(msg, Rtype::A, false).await;
+            let rcrds = dns::get_dns_rcrd::<rdata::A>(msg, Rtype::A, false).await;
             rcrds.into_iter().map(|r| {
                 json!({
                     "name": r.owner().to_string(),
