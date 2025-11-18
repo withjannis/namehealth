@@ -278,6 +278,7 @@
           <option value="DS">DS</option>
           <option value="DNSKEY">DNSKEY</option>
           <option value="TXT">TXT</option>
+          <option value="SOA">SOA</option>
         </select>
         <button type="submit" class="w3-button w3-blue">Search</button>
       </form>
@@ -466,7 +467,14 @@ function renderRecord(rec) {
     dataRow.appendChild(elDataItem('algorithm', data.algorithm));
     dataRow.appendChild(elDataItem('public_key', data.public_key));
   } else if (rtype === 'TXT') {
-    dataRow.appendChild(elDataItem('txt', data.text));
+    dataRow.appendChild(elDataItem('text', data.text));
+  } else if (rtype === 'SOA') {
+    dataRow.appendChild(elDataItem('serial', data.serial));
+    dataRow.appendChild(elDataItem('rname', data.rname));
+    dataRow.appendChild(elDataItem('mname', data.mname));
+    dataRow.appendChild(elDataItem('minimum', data.minimum));
+    dataRow.appendChild(elDataItem('refresh', data.refresh));
+    dataRow.appendChild(elDataItem('expire', data.expire));
   } else {
     console.log("Unknown type", String(data))
   }
