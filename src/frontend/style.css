@@ -61,7 +61,8 @@ html,body{
   flex: 1 0 auto;
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - var(--topbar-height));
+  /* one is for the topbar and one for the padding */
+  min-height: calc(100vh - var(--topbar-height) - var(--topbar-height));
 }
 
 /* keep content readable on wide screens by adding interior offset */
