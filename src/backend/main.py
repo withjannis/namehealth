@@ -46,6 +46,19 @@ async def view_domain():
     return fastapi.responses.HTMLResponse(content=html, status_code=200)
 
 
+@app.get(
+    "/api/v1/assets/{asset}", response_class=fastapi.responses.FileResponse
+)
+async def get_assets(asset):
+    """Get asset"""
+
+    if asset in ("script.js", "style.css"):
+        return fastapi.responses.FileResponse(
+            f"src/frontend/{asset}", status_code=200
+        )
+    return fastapi.responses.Response(status_code=404)
+
+
 @app.get("/api/v1/domains", response_class=fastapi.responses.JSONResponse)
 async def list_domain():
     """List all monitored domains."""
