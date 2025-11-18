@@ -449,54 +449,26 @@ function renderRecord(rec) {
   const data = rec.data ?? {};
 
   // type-specific rendering
-  const rtype = (rec.type || rec.rtype || '').toUpperCase();
+  const rtype = (rec.type).toUpperCase();
   if (rtype === 'A' || rtype === 'AAAA') {
-    if (Array.isArray(data)) {
-      data.forEach(a => dataRow.appendChild(elDataItem('addr', a.addr || a)));
-    } else {
-      dataRow.appendChild(elDataItem('addr', data.addr || JSON.stringify(data)));
-    }
+    dataRow.appendChild(elDataItem('addr', data.addr));
   } else if (rtype === 'MX') {
-    if (Array.isArray(data)) {
-      data.forEach(m => {
-        dataRow.appendChild(elDataItem('preference', m.preference));
-        dataRow.appendChild(elDataItem('exchange', m.exchange));
-      });
-    } else {
-      dataRow.appendChild(elDataItem('preference', data.preference ?? '-'));
-      dataRow.appendChild(elDataItem('exchange', data.exchange ?? '-'));
-    }
+    dataRow.appendChild(elDataItem('preference', data.preference));
+    dataRow.appendChild(elDataItem('exchange', data.exchange));
   } else if (rtype === 'DS') {
-    dataRow.appendChild(elDataItem('key_tag', data.key_tag ?? data.keyTag ?? '-'));
-    dataRow.appendChild(elDataItem('alg', data.algorithm ?? '-'));
-    dataRow.appendChild(elDataItem('digest_type', data.digest_type ?? data.digestType ?? '-'));
-    dataRow.appendChild(elDataItem('digest', data.digest ?? '-'));
+    dataRow.appendChild(elDataItem('key_tag', data.key_tag));
+    dataRow.appendChild(elDataItem('alg', data.algorithm));
+    dataRow.appendChild(elDataItem('digest_type', data.digest_type));
+    dataRow.appendChild(elDataItem('digest', data.digest));
   } else if (rtype === 'DNSKEY') {
-    dataRow.appendChild(elDataItem('flags', data.flags ?? '-'));
-    dataRow.appendChild(elDataItem('protocol', data.protocol ?? '-'));
-    dataRow.appendChild(elDataItem('algorithm', data.algorithm ?? '-'));
-    dataRow.appendChild(elDataItem('public_key', data.public_key ?? '-'));
+    dataRow.appendChild(elDataItem('flags', data.flags));
+    dataRow.appendChild(elDataItem('protocol', data.protocol));
+    dataRow.appendChild(elDataItem('algorithm', data.algorithm));
+    dataRow.appendChild(elDataItem('public_key', data.public_key));
   } else if (rtype === 'TXT') {
-    // show TXT strings
-    if (Array.isArray(data)) {
-      data.forEach(t => dataRow.appendChild(elDataItem('txt', Array.isArray(t) ? t.join(' ') : t)));
-    } else if (typeof data === 'string') {
-      dataRow.appendChild(elDataItem('txt', data));
-    } else {
-      // generic fallback
-      for (const k in data) dataRow.appendChild(elDataItem(k, data[k]));
-    }
+    dataRow.appendChild(elDataItem('txt', data.text));
   } else {
-    // generic display for unknown types: show fields as data items
-    if (Array.isArray(data)) {
-      data.forEach(d => {
-        for (const k in d) dataRow.appendChild(elDataItem(k, d[k]));
-      });
-    } else if (typeof data === 'object' && data !== null) {
-      for (const k in data) dataRow.appendChild(elDataItem(k, data[k]));
-    } else {
-      dataRow.appendChild(elDataItem('value', String(data)));
-    }
+    console.log("Unknown type", String(data))
   }
 
   card.appendChild(dataRow);
