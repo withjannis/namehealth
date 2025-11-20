@@ -66,9 +66,9 @@ function timeDifference(previous) {
     if (elapsed < msPerMinute) return Math.round(elapsed/1000) + ' seconds ago';
     if (elapsed < msPerHour) return Math.round(elapsed/msPerMinute) + ' minutes ago';
     if (elapsed < msPerDay) return Math.round(elapsed/msPerHour) + ' hours ago';
-    if (elapsed < msPerMonth) return 'approximately ' + Math.round(elapsed/msPerDay) + ' days ago';
-    if (elapsed < msPerYear) return 'approximately ' + Math.round(elapsed/msPerMonth) + ' months ago';
-    return 'approximately ' + Math.round(elapsed/msPerYear ) + ' years ago';
+    if (elapsed < msPerMonth) return '~' + Math.round(elapsed/msPerDay) + ' days ago';
+    if (elapsed < msPerYear) return '~' + Math.round(elapsed/msPerMonth) + ' months ago';
+    return '~' + Math.round(elapsed/msPerYear ) + ' years ago';
 }
 
 /* helper: truncate string to n chars (adds ellipsis) */
@@ -80,17 +80,35 @@ function truncateString(s, n) {
 }
 
 /* helper to render a single data key/value (with truncation + copy) */
-function elDataItem(label, full) {
+function elDataItem(label, data) {
   const d = document.createElement('div');
   d.className = 'data-item';
+  key_sort_list = {
+    "SOA": ["mname", "rname", "serial", "expire", "refresh", "retry", "expire", "minimum",],
+    "A": ["addr",],
+    "AAAA": ["addr",],
+    "MX": ["preference", "exchange",],
+    "DS": ["key_tag", "algorithm", "digest_type", "digest",],
+    "DNSKEY": ["algorithm", "flags", "protocol", "public_key",],
+    "TXT": ["text",],
+  }
+  const description = key_sort_list[label]
+    .filter(key => key in data)
+    .join(' ');
 
-  const truncated = truncateString(full, 44);
+  const values = key_sort_list[label]
+    .filter(key => key in data)
+    .map(key => data[key])
+    .join(' ');
 
   d.innerHTML = `
-    <div style="font-size:0.85rem;color:var(--muted)">${label}</div>
+    <div style="font-size:0.85rem;color:var(--muted)">
+    <strong>${escapeHtml(label)}</strong>
+    (${escapeHtml(description)})
+    </div>
     <div style="margin-top:6px;display:flex;align-items:center;gap:6px">
-      <span class="value" title="${escapeHtml(full)}">${escapeHtml(truncated)}</span>
-      ${full.length > truncated.length ? '<button class="copy-btn" title="Copy full value">Copy</button>' : ''}
+      <span class="value" style="overflow: hidden; text-overflow: ellipsis;">${escapeHtml(values)}</span>
+      <button class="copy-btn" title="Copy full value">Copy</button>
     </div>
   `;
 
@@ -100,7 +118,7 @@ function elDataItem(label, full) {
     btn.addEventListener('click', async (ev) => {
       ev.preventDefault();
       try {
-        await navigator.clipboard.writeText(full);
+        await navigator.clipboard.writeText(values);
         const old = btn.textContent;
         btn.textContent = 'Copied';
         setTimeout(() => btn.textContent = old, 500);
@@ -131,47 +149,23 @@ function renderRecord(rec) {
 
   const meta = document.createElement('div');
   meta.className = 'record-meta';
-  meta.innerHTML = `<div><strong>${rec.type || rec.rtype || ''}</strong></div>
-                    <div>${rec.name || rec.owner || ''}</div>
-                    <div>ttl: ${rec.ttl ?? '-'}</div>
-                    <div>${(rec.class ?? rec.c) || ''}</div>`;
+  meta.innerHTML = `<div><strong>${rec[0].type}</strong></div>
+                    <div>${rec[0].name}</div>
+                    <div>ttl: ${rec[0].ttl}</div>
+                    <div>${rec[0].class}</div>`;
+
   card.appendChild(meta);
 
   const dataRow = document.createElement('div');
   dataRow.className = 'record-data';
 
-  const data = rec.data ?? {};
 
   // type-specific rendering
-  const rtype = (rec.type).toUpperCase();
-  if (rtype === 'A' || rtype === 'AAAA') {
-    dataRow.appendChild(elDataItem('addr', data.addr));
-  } else if (rtype === 'MX') {
-    dataRow.appendChild(elDataItem('preference', data.preference));
-    dataRow.appendChild(elDataItem('exchange', data.exchange));
-  } else if (rtype === 'DS') {
-    dataRow.appendChild(elDataItem('key_tag', data.key_tag));
-    dataRow.appendChild(elDataItem('alg', data.algorithm));
-    dataRow.appendChild(elDataItem('digest_type', data.digest_type));
-    dataRow.appendChild(elDataItem('digest', data.digest));
-  } else if (rtype === 'DNSKEY') {
-    dataRow.appendChild(elDataItem('flags', data.flags));
-    dataRow.appendChild(elDataItem('protocol', data.protocol));
-    dataRow.appendChild(elDataItem('algorithm', data.algorithm));
-    dataRow.appendChild(elDataItem('public_key', data.public_key));
-  } else if (rtype === 'TXT') {
-    dataRow.appendChild(elDataItem('text', data.text));
-  } else if (rtype === 'SOA') {
-    dataRow.appendChild(elDataItem('serial', data.serial));
-    dataRow.appendChild(elDataItem('rname', data.rname));
-    dataRow.appendChild(elDataItem('mname', data.mname));
-    dataRow.appendChild(elDataItem('minimum', data.minimum));
-    dataRow.appendChild(elDataItem('refresh', data.refresh));
-    dataRow.appendChild(elDataItem('expire', data.expire));
-  } else {
-    console.log("Unknown type", String(data))
+  for (i in rec) {
+    const rtype = (rec[i].type).toUpperCase();
+    const data = rec[i].data;
+    dataRow.appendChild(elDataItem(rtype, data));
   }
-
   card.appendChild(dataRow);
   return card;
 }
@@ -187,7 +181,6 @@ function clearData() {
 }
 
 async function getData(domain, record_type) {
-  //const url = `http://127.0.0.1:8000/api/v1/domain/${encodeURIComponent(domain)}/${encodeURIComponent(record_type)}`;
   const url = `/api/v1/domain/${encodeURIComponent(domain)}/${encodeURIComponent(record_type)}`;
 
   const recordsEl = document.getElementById("x-records");
@@ -224,9 +217,7 @@ async function getData(domain, record_type) {
       return;
     }
 
-    for (const rec of list) {
-      recordsEl.appendChild(renderRecord(rec));
-    }
+    recordsEl.appendChild(renderRecord(list));
 
   } catch (error) {
     console.error(error);
@@ -241,7 +232,7 @@ async function getData(domain, record_type) {
   const rtypeSelect = document.getElementById('search-rtype');
 
   const params = new URLSearchParams(document.location.search);
-  const initialDomain = params.get('domain') || 'aws.com';
+  const initialDomain = (params.get('domain') || 'example.com').toLowerCase();
   const initialRtype = (params.get('rtype') || 'A').toUpperCase();
 
   domainInput.value = initialDomain;
@@ -251,7 +242,7 @@ async function getData(domain, record_type) {
 
   form.addEventListener('submit', (ev) => {
     ev.preventDefault();
-    const domain = domainInput.value.trim() || 'aws.com';
+    const domain = (domainInput.value.trim() || 'example.com').toLowerCase();
     const rtype = (rtypeSelect.value || 'A').toUpperCase();
 
     const newParams = new URLSearchParams();
@@ -262,3 +253,44 @@ async function getData(domain, record_type) {
     getData(domain, rtype);
   });
 })();
+
+async function renderDnssecChain(){
+  const url = "/api/v1/dnssec.json"
+
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const result = await response.json();
+
+  const recordsEl = document.getElementById("x-dnssecchain");
+
+  for (const i in result.data) {
+    console.log(result.data[i].fqdn);
+
+    const card = document.createElement('div');
+    card.className = 'record-card';
+
+    const meta = document.createElement('div');
+    meta.className = 'record-meta';
+    meta.innerHTML = `<div><strong>${result.data[i].fqdn}</strong></div>`;
+
+    card.appendChild(meta);
+
+    const dataRow = document.createElement('div');
+    dataRow.className = 'record-data';
+    for (const j in result.data[i].DS) {
+
+      dataRow.appendChild(elDataItem("DS", result.data[i].DS[j]));
+
+      card.appendChild(dataRow);
+      recordsEl.appendChild(card);
+    }
+
+    for (const j in result.data[i].DNSKEYS) {
+      dataRow.appendChild(elDataItem("DNSKEY", result.data[i].DNSKEYS[j]));
+
+      card.appendChild(dataRow);
+      recordsEl.appendChild(card);
+    }
+  }
+}
+//renderDnssecChain();
