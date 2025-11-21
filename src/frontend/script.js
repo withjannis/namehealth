@@ -89,7 +89,7 @@ function elDataItem(label, data) {
     "AAAA": ["addr",],
     "MX": ["preference", "exchange",],
     "DS": ["key_tag", "algorithm", "digest_type", "digest",],
-    "DNSKEY": ["algorithm", "flags", "protocol", "public_key",],
+    "DNSKEY": ["flags", "algorithm", "protocol", "public_key",],
     "TXT": ["text",],
   }
   const description = key_sort_list[label]
@@ -159,7 +159,6 @@ function renderRecord(rec) {
   const dataRow = document.createElement('div');
   dataRow.className = 'record-data';
 
-
   // type-specific rendering
   for (i in rec) {
     const rtype = (rec[i].type).toUpperCase();
@@ -180,7 +179,7 @@ function clearData() {
   document.getElementById("x-subtitle").textContent = 'Nameserver • Type';
 }
 
-async function getData(domain, record_type) {
+async function getRecordsData(domain, record_type) {
   const url = `/api/v1/domain/${encodeURIComponent(domain)}/${encodeURIComponent(record_type)}`;
 
   const recordsEl = document.getElementById("x-records");
@@ -222,6 +221,54 @@ async function getData(domain, record_type) {
   } catch (error) {
     console.error(error);
     recordsEl.innerHTML = `<div class="w3-panel w3-red">Error fetching data: ${error.message}</div>`;
+  }
+}
+
+async function getDnssecData(domain) {
+  const url = `/api/v1/dnssec/${encodeURIComponent(domain)}`
+
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const result = await response.json();
+
+  const recordsEl = document.getElementById("x-dnssecchain");
+
+  document.getElementById("x-domain-name").textContent = result.fqdn;
+  document.getElementById("x-fqdn").textContent = result.fqdn;
+  document.getElementById("x-timestamp").textContent = timeDifference(1);
+  document.getElementById("x-ns").textContent = result.ns;
+  document.getElementById("x-recordtype").textContent = "DNSKEY, DS";
+  document.getElementById("x-subtitle").textContent = result.ns;
+
+  recordsEl.innerHTML = '';
+  for (const i in result.data) {
+    console.log(result.data[i].fqdn);
+
+    const card = document.createElement('div');
+    card.className = 'record-card';
+
+    const meta = document.createElement('div');
+    meta.className = 'record-meta';
+    meta.innerHTML = `<div><strong>${result.data[i].fqdn}</strong></div>`;
+
+    card.appendChild(meta);
+
+    const dataRow = document.createElement('div');
+    dataRow.className = 'record-data';
+    for (const j in result.data[i].DS) {
+
+      dataRow.appendChild(elDataItem("DS", result.data[i].DS[j]));
+
+      card.appendChild(dataRow);
+      recordsEl.appendChild(card);
+    }
+
+    for (const j in result.data[i].DNSKEYS) {
+      dataRow.appendChild(elDataItem("DNSKEY", result.data[i].DNSKEYS[j]));
+
+      card.appendChild(dataRow);
+      recordsEl.appendChild(card);
+    }
   }
 }
 
@@ -276,18 +323,11 @@ async function recordsPage() {
   var ElRecordsSearch = document.getElementById('x-records-search');
   var ElRecordsSubtitle = document.getElementById('x-records-subtitle');
   var ElRecords = document.getElementById('x-records');
-  if (ElRecordsSearch) {
-    ElRecordsSearch.style.display = 'block';
-  }
-  if (ElRecords) {
-    ElRecords.style.display = "block";
-  }
-  if (ElRecordsSubtitle) {
-    ElRecordsSubtitle.style.display = "block";
-  }
+  if (ElRecordsSearch) ElRecordsSearch.style.display = 'block';
+  if (ElRecords) ElRecords.style.display = "block";
+  if (ElRecordsSubtitle) ElRecordsSubtitle.style.display = "block";
 
   const form = document.getElementById('x-records-search-form');
-
   const domainInput = document.getElementById('x-records-search-domain');
   const rtypeSelect = document.getElementById('x-records-search-rtype');
 
@@ -298,7 +338,7 @@ async function recordsPage() {
   domainInput.value = initialDomain;
   rtypeSelect.value = initialRtype;
 
-  getData(initialDomain, initialRtype);
+  getRecordsData(initialDomain, initialRtype);
 
   form.addEventListener('submit', (ev) => {
     ev.preventDefault();
@@ -310,24 +350,54 @@ async function recordsPage() {
     newParams.set('rtype', rtype);
     history.replaceState(null, '', `${location.pathname}?${newParams.toString()}`);
 
-    getData(domain, rtype);
+    getRecordsData(domain, rtype);
+  });
+}
+
+async function dnssecPage(){
+  updateNav("x-navdnssec");
+  var ElRecordsSearch = document.getElementById('x-records-search');
+  var ElRecordsSearchRtype = document.getElementById('x-records-search-rtype');
+  var ElDnssec = document.getElementById('x-dnssecchain');
+  var ElSubtitle = document.getElementById('x-records-subtitle');
+  if (ElRecordsSearch) ElRecordsSearch.style.display = 'block';
+  if (ElDnssec) ElDnssec.style.display = "block";
+  if (ElRecordsSearchRtype) ElRecordsSearchRtype.style.display = "none";
+  if (ElSubtitle) ElSubtitle.style.display = "block";
+
+  const form = document.getElementById('x-records-search-form');
+  const domainInput = document.getElementById('x-records-search-domain');
+  const rtypeSelect = document.getElementById('x-records-search-rtype');
+
+  const params = new URLSearchParams(document.location.search);
+  const initialDomain = (params.get('domain') || 'example.com').toLowerCase();
+
+  domainInput.value = initialDomain;
+
+  getDnssecData(initialDomain);
+
+  form.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const domain = (domainInput.value.trim() || 'example.com').toLowerCase();
+
+    const newParams = new URLSearchParams();
+    newParams.set('domain', domain);
+    history.replaceState(null, '', `${location.pathname}?${newParams.toString()}`);
+
+    getDnssecData(domain);
   });
 }
 
 /* search form wiring */
 (function() {
 
-  console.log(location.pathname)
   if (location.pathname == "/") {
-    console.log("path is /");
     window.location.href = '/view/records';
 
   } else if (location.pathname == "/view") {
-    console.log("path is /view");
     window.location.href = '/view/records';
 
   } else if (location.pathname == "/view/about") {
-    console.log("path is /view/about");
     aboutPage();
 
   } else if (location.pathname == "/view/records") {
@@ -342,44 +412,3 @@ async function recordsPage() {
   }
 
 })();
-
-async function renderDnssecChain(){
-  const url = "/api/v1/dnssec.json"
-
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  const result = await response.json();
-
-  const recordsEl = document.getElementById("x-dnssecchain");
-
-  for (const i in result.data) {
-    console.log(result.data[i].fqdn);
-
-    const card = document.createElement('div');
-    card.className = 'record-card';
-
-    const meta = document.createElement('div');
-    meta.className = 'record-meta';
-    meta.innerHTML = `<div><strong>${result.data[i].fqdn}</strong></div>`;
-
-    card.appendChild(meta);
-
-    const dataRow = document.createElement('div');
-    dataRow.className = 'record-data';
-    for (const j in result.data[i].DS) {
-
-      dataRow.appendChild(elDataItem("DS", result.data[i].DS[j]));
-
-      card.appendChild(dataRow);
-      recordsEl.appendChild(card);
-    }
-
-    for (const j in result.data[i].DNSKEYS) {
-      dataRow.appendChild(elDataItem("DNSKEY", result.data[i].DNSKEYS[j]));
-
-      card.appendChild(dataRow);
-      recordsEl.appendChild(card);
-    }
-  }
-}
-//renderDnssecChain();

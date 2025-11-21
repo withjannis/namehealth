@@ -1,4 +1,6 @@
 ---
+fqdn: cloudflare.com.
+ns: 1.1.1.1:53
 trust_anchors:
   - abcdefghijklmnopqrstuvwxyz
 data:

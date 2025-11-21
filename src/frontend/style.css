@@ -91,7 +91,7 @@ html,body{
   letter-spacing:0.2px;
   color:var(--text);
 }
-#x-records-subtitle{
+.x-subtitles {
   color:var(--muted);
   font-size:0.95rem; margin-bottom:12px;
   min-height: 1.6rem;

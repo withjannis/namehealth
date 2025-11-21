@@ -1,4 +1,3 @@
-// ...existing code...
 use serde_json::{Value, json};
 
 use domain::base::{Name, Rtype};
@@ -27,6 +26,26 @@ async fn collect_records(qname: &str, nsaddr: SocketAddr, rtype: Rtype) -> Vec<V
     ).await;
 
     match rtype {
+        Rtype::SOA => {
+            let rcrds = dns::get_dns_rcrd::<rdata::Soa<_>>(msg, Rtype::SOA, false).await;
+            rcrds.into_iter().map(|r| {
+                json!({
+                    "name": r.owner().to_string(),
+                    "class": r.class().to_string(),
+                    "type": r.rtype().to_string(),
+                    "ttl": r.ttl().as_secs(),
+                    "data": {
+                        "expire": r.data().expire().as_secs(),
+                        "minimum": r.data().minimum().as_secs(),
+                        "mname": r.data().mname().to_string(),
+                        "refresh": r.data().refresh().as_secs(),
+                        "retry": r.data().retry().as_secs(),
+                        "rname": r.data().rname().to_string(),
+                        "serial": r.data().serial().into_int(),
+                    }
+                })
+            }).collect()
+        }
         Rtype::A => {
             let rcrds = dns::get_dns_rcrd::<rdata::A>(msg, Rtype::A, false).await;
             rcrds.into_iter().map(|r| {
@@ -42,7 +61,7 @@ async fn collect_records(qname: &str, nsaddr: SocketAddr, rtype: Rtype) -> Vec<V
             }).collect()
         }
         Rtype::AAAA => {
-            let rcrds = get_dns_rcrd::<rdata::Aaaa>(msg, Rtype::AAAA, false).await;
+            let rcrds = dns::get_dns_rcrd::<rdata::Aaaa>(msg, Rtype::AAAA, false).await;
             rcrds.into_iter().map(|r| {
                 json!({
                     "name": r.owner().to_string(),
@@ -56,7 +75,7 @@ async fn collect_records(qname: &str, nsaddr: SocketAddr, rtype: Rtype) -> Vec<V
             }).collect()
         }
         Rtype::MX => {
-            let rcrds = get_dns_rcrd::<rdata::Mx<_>>(msg, Rtype::MX, false).await;
+            let rcrds = dns::get_dns_rcrd::<rdata::Mx<_>>(msg, Rtype::MX, false).await;
             rcrds.into_iter().map(|r| {
                 json!({
                     "name": r.owner().to_string(),
@@ -71,7 +90,7 @@ async fn collect_records(qname: &str, nsaddr: SocketAddr, rtype: Rtype) -> Vec<V
             }).collect()
         }
         Rtype::DS => {
-            let rcrds = get_dns_rcrd::<rdata::Ds<_>>(msg, Rtype::DS, false).await;
+            let rcrds = dns::get_dns_rcrd::<rdata::Ds<_>>(msg, Rtype::DS, false).await;
             rcrds.into_iter().map(|r| {
                 let ds = r.data();
                 json!({
@@ -89,7 +108,7 @@ async fn collect_records(qname: &str, nsaddr: SocketAddr, rtype: Rtype) -> Vec<V
             }).collect()
         }
         Rtype::DNSKEY => {
-            let rcrds = get_dns_rcrd::<rdata::Dnskey<_>>(msg, Rtype::DNSKEY, false).await;
+            let rcrds = dns::get_dns_rcrd::<rdata::Dnskey<_>>(msg, Rtype::DNSKEY, false).await;
             rcrds.into_iter().map(|r| {
                 let k = r.data();
                 json!({
@@ -107,7 +126,7 @@ async fn collect_records(qname: &str, nsaddr: SocketAddr, rtype: Rtype) -> Vec<V
             }).collect()
         }
         Rtype::TXT => {
-            let rcrds = get_dns_rcrd::<rdata::Txt<_>>(msg, Rtype::TXT, false).await;
+            let rcrds = dns::get_dns_rcrd::<rdata::Txt<_>>(msg, Rtype::TXT, false).await;
             rcrds.into_iter().map(|r| {
                 let k = r.data();
                 json!({
@@ -204,13 +223,13 @@ async fn main() {
     // test
     // list of (fqdn, types to probe)
     let probes = vec![
-        ("akamai.com",     vec![Rtype::A, Rtype::MX, Rtype::AAAA, Rtype::DS, Rtype::DNSKEY, Rtype::TXT]),
-        ("aws.com",        vec![Rtype::A, Rtype::MX, Rtype::AAAA, Rtype::DS, Rtype::DNSKEY, Rtype::TXT]),
-        ("cloudflare.com", vec![Rtype::A, Rtype::MX, Rtype::AAAA, Rtype::DS, Rtype::DNSKEY, Rtype::TXT]),
-        ("example.com",    vec![Rtype::A, Rtype::MX, Rtype::AAAA, Rtype::DS, Rtype::DNSKEY, Rtype::TXT]),
-        ("github.com",     vec![Rtype::A, Rtype::MX, Rtype::AAAA, Rtype::DS, Rtype::DNSKEY, Rtype::TXT]),
-        ("google.com",     vec![Rtype::A, Rtype::MX, Rtype::AAAA, Rtype::DS, Rtype::DNSKEY, Rtype::TXT]),
-        ("zg.ch",          vec![Rtype::A, Rtype::MX, Rtype::AAAA, Rtype::DS, Rtype::DNSKEY, Rtype::TXT]),
+        ("akamai.com",     vec![Rtype::SOA, Rtype::A, Rtype::MX, Rtype::AAAA, Rtype::DS, Rtype::DNSKEY, Rtype::TXT]),
+        ("aws.com",        vec![Rtype::SOA, Rtype::A, Rtype::MX, Rtype::AAAA, Rtype::DS, Rtype::DNSKEY, Rtype::TXT]),
+        ("cloudflare.com", vec![Rtype::SOA, Rtype::A, Rtype::MX, Rtype::AAAA, Rtype::DS, Rtype::DNSKEY, Rtype::TXT]),
+        ("example.com",    vec![Rtype::SOA, Rtype::A, Rtype::MX, Rtype::AAAA, Rtype::DS, Rtype::DNSKEY, Rtype::TXT]),
+        ("github.com",     vec![Rtype::SOA, Rtype::A, Rtype::MX, Rtype::AAAA, Rtype::DS, Rtype::DNSKEY, Rtype::TXT]),
+        ("google.com",     vec![Rtype::SOA, Rtype::A, Rtype::MX, Rtype::AAAA, Rtype::DS, Rtype::DNSKEY, Rtype::TXT]),
+        ("zg.ch",          vec![Rtype::SOA, Rtype::A, Rtype::MX, Rtype::AAAA, Rtype::DS, Rtype::DNSKEY, Rtype::TXT]),
     ];
 
     // collect handles for all probe tasks + config-check tasks, run them concurrently
@@ -250,3 +269,15 @@ async fn main() {
  
      println!("All probes finished.");
  }
+
+
+// What is the plan?
+// collect_dnssec("aws.com")
+//      aws.com. SOA, DS, DNSKEY
+//      com. SOA, DS, DNSKEY
+//      . SOA, (DS), DNSKEY
+
+// collect("aws.com")
+//      aws.com. SOA, DS, DNSKEY
+//      com. SOA, DS, DNSKEY
+//      . SOA, (DS), DNSKEY
