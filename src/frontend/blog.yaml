@@ -1,0 +1,19 @@
+posts:
+  - title: Implementing Rust DNS Collector &#x1F940;
+    published: 2025-11-21T21:00:00+0000
+    content: >
+      Quick update! I have been working on implementing a DNS collector in Rust.
+      The goal is to have a fast and efficient collector that can handle a large
+      number of domains and queries.</br><br>
+      Currently I have to implement a basic recursive DNS resolver to be able to
+      trace DNS resolution paths.  This takes more time than I initially
+      expected, but it's a <strong>fun challenge!</strong></br><br>
+      Stay tuned for more updates!
+
+  - title: Welcome to NameHealth &#128187;
+    published: 2025-11-21T11:00:00+0000
+    content: >
+      Hello! <strong>Welcome to NameHealth.</strong>
+      This is my personal project to help Infrastructure Engineers monitor and
+      debug their DNS Infrastructure from an outside view. At the same time, I
+      want to learn rust with a practical project.
