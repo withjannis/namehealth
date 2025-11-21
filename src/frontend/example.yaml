@@ -1,0 +1,65 @@
+---
+trust_anchors:
+  - abcdefghijklmnopqrstuvwxyz
+data:
+  - fqdn: "."
+    root: true
+    DS: []
+    DNSKEYS:
+      - flags: 257
+        protocol: A
+        algorithm: B
+        public_key: abcdefghij
+        ds_exists: false
+        ta_exists: true
+
+      - flags: 256
+        protocol: A
+        algorithm: B
+        public_key: abcdefghij
+        ds_exists: false
+        ta_exists: false
+
+  - fqdn: "com."
+    root: false
+    DS:
+      - key_tag: 1234
+        algorithm: C
+        digest_type: D
+        digest: zyxwvutsrq
+    DNSKEYS:
+      - flags: 257
+        protocol: A
+        algorithm: B
+        public_key: abcdefghij
+        ds_exists: true
+        ta_exists: false
+
+      - flags: 256
+        protocol: A
+        algorithm: B
+        public_key: abcdefghij
+        ds_exists: false
+        ta_exists: false
+
+  - fqdn: "cloudflare.com."
+    root: false
+    DS:
+      - key_tag: 2345
+        algorithm: C
+        digest_type: D
+        digest: zyxwvutsrq
+    DNSKEYS:
+      - flags: 257
+        protocol: A
+        algorithm: B
+        public_key: abcdefghij
+        ds_exists: true
+        ta_exists: false
+
+      - flags: 256
+        protocol: A
+        algorithm: B
+        public_key: abcdefghij
+        ds_exists: false
+        ta_exists: false

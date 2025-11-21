@@ -39,7 +39,9 @@ async def favicon(icon_name: str):
 
 
 @app.get("/", response_class=fastapi.responses.HTMLResponse)
-async def view_domain():
+@app.get("/view", response_class=fastapi.responses.HTMLResponse)
+@app.get("/view/{_}", response_class=fastapi.responses.HTMLResponse)
+async def view_domain(_=None):
     """Serve the main HTML view."""
     with open("src/frontend/view.html", encoding="utf-8") as f:
         html = f.read()
@@ -120,3 +122,26 @@ async def head_domain(domain: str, _: str):
         return fastapi.responses.Response(status_code=204)
 
     return fastapi.responses.Response(status_code=200)
+
+
+@app.get("/api/v1/dnssec.json", response_class=fastapi.responses.JSONResponse)
+async def view_domain():
+    """Serve test domain file."""
+    import yaml
+
+    with open("src/frontend/example.yaml", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+
+    return fastapi.responses.JSONResponse(content=data)
+
+
+@app.get("/api/v1/about", response_class=fastapi.responses.JSONResponse)
+async def view_domain():
+    """Serve test domain file."""
+    about_html = """Hello! This is withjannis. You can find me and this project on Github <a href="https://github.com/withjannis">github.com/withjannis</a>.
+    This is my personal project. It should help Infrastructure Engineers help debug their DNS Infrastructure from an outside view.
+    """
+    data = {
+        "about": about_html,
+    }
+    return fastapi.responses.JSONResponse(content=data)

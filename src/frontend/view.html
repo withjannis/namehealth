@@ -39,7 +39,8 @@
     <h5 style="margin-top:0">Dashboard</h5>
   </div>
   <div class="w3-bar-block">
-    <a href="#" class="w3-bar-item w3-button w3-padding w3-blue">Overview</a>
+    <a id="x-navabout" href="/view/about" class="w3-bar-item w3-button w3-padding">About</a>
+    <a id="x-navrecords" href="/view/records" class="w3-bar-item w3-button w3-padding">DNS Records</a>
   </div>
 </nav>
 
@@ -49,14 +50,14 @@
 <div class="w3-main">
   <div class="content-wrapper">
 
-    <header class="site-header">
+    <div id="x-records-search">
       <h1 id="x-domain-name">Search for domain...</h1>
       <div class="subtitle" id="x-subtitle">Nameserver • Type</div>
 
       <!-- search bar BELOW the title as requested -->
-      <form id="search-form" aria-label="Search domain records">
-        <input id="search-domain" class="w3-input w3-border" type="search" placeholder="example.com" style="width:260px;" />
-        <select id="search-rtype" class="w3-select" style="width:140px;">
+      <form id="x-records-search-form" aria-label="Search domain records">
+        <input id="x-records-search-domain" class="w3-input w3-border" type="search" placeholder="example.com" style="width:260px;" />
+        <select id="x-records-search-rtype" class="w3-select" style="width:140px;">
           <option value="A">A</option>
           <option value="AAAA">AAAA</option>
           <option value="SOA">SOA</option>
@@ -67,9 +68,9 @@
         </select>
         <button type="submit" class="w3-button w3-blue">Search</button>
       </form>
-    </header>
+    </div>
 
-    <div class="w3-container w3-padding-small" style="background:transparent;padding-left:0;padding-right:0;margin-bottom:8px;">
+    <div id="x-records-subtitle" class="w3-container w3-padding-small" style="background:transparent;padding-left:0;padding-right:0;margin-bottom:8px;">
       <div style="display:flex;gap:24px;flex-wrap:wrap">
         <div><strong>FQDN:</strong> <span id="x-fqdn"></span></div>
         <div><strong>Last probe:</strong> <span id="x-timestamp"></span></div>
@@ -81,9 +82,13 @@
     <div id="x-records"></div>
     <div id="x-dnssecchain"></div>
 
-    <footer class="w3-container w3-padding-16 site-footer" style="background:transparent;color:var(--muted);">
+    <div id="x-about">
+    </div>
+
+
+    <div id="x-footer" class="w3-container w3-padding-16" style="background:transparent;color:var(--muted);">
       © NameHealth 2025
-    </footer>
+    </div>
 
   </div>
 </div>

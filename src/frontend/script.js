@@ -225,11 +225,49 @@ async function getData(domain, record_type) {
   }
 }
 
-/* search form wiring */
-(function() {
-  const form = document.getElementById('search-form');
-  const domainInput = document.getElementById('search-domain');
-  const rtypeSelect = document.getElementById('search-rtype');
+async function updateNav(pageElement) {
+  navElements = ["x-navabout", "x-navrecords"];
+  for (x of navElements) {
+    xEl = document.getElementById(x);
+    if(pageElement == x){
+      xEl.classList.add("w3-blue")
+    } else {
+      xEl.classList.remove("w3-blue")
+    }
+  }
+}
+
+async function aboutPage() {
+  updateNav("x-navabout");
+  var ElAbout = document.getElementById('x-about');
+  if (ElAbout) ElAbout.style.display = 'block';
+
+  const response = await fetch("/api/v1/about");
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const result = await response.json();
+
+  document.getElementById("x-about").innerHTML = result.about;
+}
+
+async function recordsPage() {
+  updateNav("x-navrecords");
+  var ElRecordsSearch = document.getElementById('x-records-search');
+  var ElRecordsSubtitle = document.getElementById('x-records-subtitle');
+  var ElRecords = document.getElementById('x-records');
+  if (ElRecordsSearch) {
+    ElRecordsSearch.style.display = 'block';
+  }
+  if (ElRecords) {
+    ElRecords.style.display = "block";
+  }
+  if (ElRecordsSubtitle) {
+    ElRecordsSubtitle.style.display = "block";
+  }
+
+  const form = document.getElementById('x-records-search-form');
+
+  const domainInput = document.getElementById('x-records-search-domain');
+  const rtypeSelect = document.getElementById('x-records-search-rtype');
 
   const params = new URLSearchParams(document.location.search);
   const initialDomain = (params.get('domain') || 'example.com').toLowerCase();
@@ -252,6 +290,29 @@ async function getData(domain, record_type) {
 
     getData(domain, rtype);
   });
+}
+
+/* search form wiring */
+(function() {
+
+  console.log(location.pathname)
+  if (location.pathname == "/") {
+    console.log("path is /");
+  }
+
+  if (location.pathname == "/view") {
+    console.log("path is /view");
+  }
+
+  if (location.pathname == "/view/about") {
+    console.log("path is /view/about");
+    aboutPage();
+  }
+
+  if (location.pathname == "/view/records") {
+    recordsPage();
+  }
+
 })();
 
 async function renderDnssecChain(){

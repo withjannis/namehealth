@@ -64,6 +64,9 @@ html,body{
   /* one is for the topbar and one for the padding */
   min-height: calc(100vh - var(--topbar-height) - var(--topbar-height));
 }
+.content-wrapper > * {
+  display: none;
+}
 
 /* keep content readable on wide screens by adding interior offset */
 @media (min-width: 901px) {
@@ -72,9 +75,9 @@ html,body{
 }
 
 /* ensure footer is pushed to bottom when content is short */
-.site-footer { margin-top: auto; }
+#x-footer {display: block; margin-top: auto; }
 
-header.site-header { display:block; padding:8px 0 18px 0; }
+#x-records-search { padding:8px 0 18px 0; }
 h1#x-domain-name { margin:0 0 6px 0; font-weight:600; letter-spacing:0.2px; color:var(--text); }
 .subtitle{ color:var(--muted); font-size:0.95rem; margin-bottom:12px;
   min-height: 1.6rem;        /* reserve vertical space */
@@ -87,15 +90,15 @@ h1#x-domain-name { margin:0 0 6px 0; font-weight:600; letter-spacing:0.2px; colo
 }
 
 /* search bar placed below title */
-form#search-form{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px }
-form#search-form input, form#search-form select {
+form#x-records-search-form{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px }
+form#x-records-search-form input, form#x-records-search-form select {
   background: var(--panel);
   color: var(--text);
   border: 1px solid rgba(255,255,255,0.04);
   border-radius:6px;
   padding:10px 8px;
 }
-form#search-form .w3-button {
+form#x-records-search-form .w3-button {
   background: var(--accent);
   border:none;
   color: #012226;
