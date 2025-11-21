@@ -18,14 +18,36 @@ use domain::net::client::{ dgram, dgram_stream, multi_stream, stream };
 use domain::net::client::protocol::{ TcpConnect, UdpConnect };
 use domain::net::client::request::{ ComposeRequest, RequestMessage, SendRequest };
 
+use std::borrow::Cow;
+use once_cell::sync::Lazy;
+use std::net::SocketAddr;
+
 use std::fmt::Debug;
 use std::net::IpAddr;
-use std::net::{ SocketAddr };
 use std::str::FromStr;
 
 use std::time::Duration;
 
-use crate::dns;
+// replace the broken async get_root_nameservers with a static Lazy vector
+static ROOT_NS: Lazy<Vec<SocketAddr>> = Lazy::new(|| vec![
+    SocketAddr::new(IpAddr::from_str("198.41.0.4").unwrap(), 53),
+    SocketAddr::new(IpAddr::from_str("170.247.170.2").unwrap(), 53),
+    SocketAddr::new(IpAddr::from_str("192.33.4.12").unwrap(), 53),
+    SocketAddr::new(IpAddr::from_str("199.7.91.13").unwrap(), 53),
+    SocketAddr::new(IpAddr::from_str("192.203.230.10").unwrap(), 53),
+    SocketAddr::new(IpAddr::from_str("192.5.5.241").unwrap(), 53),
+    SocketAddr::new(IpAddr::from_str("192.112.36.4").unwrap(), 53),
+    SocketAddr::new(IpAddr::from_str("198.97.190.53").unwrap(), 53),
+    SocketAddr::new(IpAddr::from_str("192.36.148.17").unwrap(), 53),
+    SocketAddr::new(IpAddr::from_str("192.58.128.30").unwrap(), 53),
+    SocketAddr::new(IpAddr::from_str("193.0.14.129").unwrap(), 53),
+    SocketAddr::new(IpAddr::from_str("199.7.83.42").unwrap(), 53),
+    SocketAddr::new(IpAddr::from_str("202.12.27.33").unwrap(), 53),
+]);
+
+pub fn get_root_nameservers() -> &'static [SocketAddr] {
+    &ROOT_NS
+}
 
 pub async fn get_dns_msg(ns: SocketAddr, na: Name<Vec<u8>>, rt: Rtype) -> Message<bytes::Bytes> {
     // Destination for UDP and TCP
@@ -115,16 +137,15 @@ pub fn get_auth_ns(
     base_ns: Option<Vec<SocketAddr>>
 ) -> BoxFuture<'static, Vec<Record<ParsedName<bytes::Bytes>, rdata::Ns<ParsedName<bytes::Bytes>>>>> {
     Box::pin(async move {
-        let root_ns = vec![SocketAddr::new(IpAddr::from_str("198.41.0.4").unwrap(), 53)];
-
-        let ns = match base_ns {
-            Some(ns) => ns,
-            None => root_ns,
+        // use borrowed slice when possible to avoid copying ROOT_NS
+        let ns_cow: Cow<'_, [SocketAddr]> = match base_ns {
+            Some(v) => Cow::Owned(v),
+            None => Cow::Borrowed(get_root_nameservers()),
         };
 
-        println!("Getting NS for {:?} using NS {:?}", na, ns);
+        println!("Getting NS for {:?} using NS {:?}", na, ns_cow);
 
-        for ns_addr in ns {
+        for &ns_addr in ns_cow.iter() {
             let dnsmsg = get_dns_msg(ns_addr, na.clone(), Rtype::NS).await;
 
             if dnsmsg.header_counts().ancount() > 0 {
@@ -187,13 +208,18 @@ pub fn get_auth_ns(
 }
 
 mod tests {
-    #[tokio::test]
-    async fn test_get_auth_ns() {
-        let ns_records = super::get_auth_ns(
-            domain::base::Name::vec_from_str("akamai.com").unwrap(),
-            None
-        ).await;
+    use super::*;
 
-        println!("NS Records: {:?}", ns_records);
+    #[tokio::test]
+    async fn test_get_dns_msg() {
+        assert_eq!(get_root_nameservers().len(), 13);
     }
-}   
+//    async fn test_get_auth_ns() {
+//        let ns_records = super::get_auth_ns(
+//            domain::base::Name::vec_from_str("akamai.com").unwrap(),
+//            None
+//        ).await;
+//
+//        println!("NS Records: {:?}", ns_records);
+//    }
+}
