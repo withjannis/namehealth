@@ -298,18 +298,17 @@ async function recordsPage() {
   console.log(location.pathname)
   if (location.pathname == "/") {
     console.log("path is /");
-  }
+    window.location.href = '/view/records';
 
-  if (location.pathname == "/view") {
+  } else if (location.pathname == "/view") {
     console.log("path is /view");
-  }
+    window.location.href = '/view/records';
 
-  if (location.pathname == "/view/about") {
+  } else if (location.pathname == "/view/about") {
     console.log("path is /view/about");
     aboutPage();
-  }
 
-  if (location.pathname == "/view/records") {
+  } else if (location.pathname == "/view/records") {
     recordsPage();
   }
 
