@@ -236,3 +236,26 @@ body.has-sidebar .content-wrapper { padding-left: calc(var(--sidebar-width) + 18
   .content-wrapper{ padding:12px; margin-top:60px }
   nav.w3-sidebar{ display:none }
 }
+
+/* BLOG PAGE STYLES */
+.blog-post {
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.blog-post h2 {
+  margin: 0 0 6px 0;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  color: var(--text);
+}
+.blog-meta {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+.blog-content {
+  line-height: 1.6;
+  font-size: 1rem;
+}

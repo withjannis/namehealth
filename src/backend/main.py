@@ -7,6 +7,7 @@ import json
 
 import fastapi
 import fastapi.responses
+import yaml
 
 import db
 
@@ -46,6 +47,33 @@ async def view_domain(_=None):
     with open("src/frontend/view.html", encoding="utf-8") as f:
         html = f.read()
     return fastapi.responses.HTMLResponse(content=html, status_code=200)
+
+
+@app.get("/api/v1/about", response_class=fastapi.responses.JSONResponse)
+async def get_about():
+    """Serve test domain file."""
+
+    about_html = """<h1>About</h1>
+Hello! This is withjannis. You can find me and this project on Github <a href="https://github.com/withjannis">github.com/withjannis</a>.
+This is my personal project. It should help Infrastructure Engineers help debug their DNS Infrastructure from an outside view.
+<h2>Support Project</h2>
+If this project provides value to you. Consider supporting me <a href="https://buymeacoffee.com/withjannis">Buy me a Coffee</a>.
+"""
+
+    data = {
+        "about": about_html,
+    }
+    return fastapi.responses.JSONResponse(content=data)
+
+
+@app.get("/api/v1/blog", response_class=fastapi.responses.JSONResponse)
+async def get_blog():
+    """Serve test domain file."""
+
+    with open("src/frontend/blog.yaml", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+
+    return fastapi.responses.JSONResponse(content=data)
 
 
 @app.get(
@@ -125,7 +153,7 @@ async def head_domain(domain: str, _: str):
 
 
 @app.get("/api/v1/dnssec.json", response_class=fastapi.responses.JSONResponse)
-async def view_domain():
+async def view_dnssec():
     """Serve test domain file."""
     import yaml
 
@@ -135,13 +163,28 @@ async def view_domain():
     return fastapi.responses.JSONResponse(content=data)
 
 
-@app.get("/api/v1/about", response_class=fastapi.responses.JSONResponse)
-async def view_domain():
-    """Serve test domain file."""
-    about_html = """<h1>About</h1>Hello! This is withjannis. You can find me and this project on Github <a href="https://github.com/withjannis">github.com/withjannis</a>.
-    This is my personal project. It should help Infrastructure Engineers help debug their DNS Infrastructure from an outside view.
+@app.get(
+    "/api/v1/dnssec/{domain}",
+    response_class=fastapi.responses.JSONResponse,
+)
+async def get_dnssec(domain: str):
+    """Get information about domain
+
+    Args:
+        domain (str): domain name
+        record_type (str): DNS record type
+
+    Returns:
+        JSONResponse: JSON with domain information
     """
-    data = {
-        "about": about_html,
-    }
+
+    with open("src/frontend/example.yaml", encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+
+    # domain_info = db.get_latest_item(domain + "#" + record_type)
+    # print(domain_info)
+    # time.sleep(0.3)
+    data["data"][2]["fqdn"] = domain + "."
+    data["fqdn"] = domain + "."
+
     return fastapi.responses.JSONResponse(content=data)

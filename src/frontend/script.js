@@ -226,7 +226,7 @@ async function getData(domain, record_type) {
 }
 
 async function updateNav(pageElement) {
-  navElements = ["x-navabout", "x-navrecords"];
+  navElements = ["x-navabout", "x-navrecords", "x-navdnssec", "x-navblog"];
   for (x of navElements) {
     xEl = document.getElementById(x);
     if(pageElement == x){
@@ -236,6 +236,28 @@ async function updateNav(pageElement) {
     }
   }
 }
+
+async function blogPage() {
+  updateNav("x-navblog");
+  var ElBlog = document.getElementById('x-blog');
+  if (ElBlog) ElBlog.style.display = 'block';
+
+  const response = await fetch("/api/v1/blog");
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const result = await response.json();
+  for (const key of result.posts) {
+    console.log(key.title);
+    const postDiv = document.createElement('div');
+    postDiv.className = 'blog-post';
+    postDiv.innerHTML = `
+      <h2>${key.title}</h2>
+      <div class="blog-meta">${new Date(key.published).toString()}</div>
+      <div class="blog-content">${key.content}</div>
+    `;
+    ElBlog.appendChild(postDiv);
+  }
+}
+
 
 async function aboutPage() {
   updateNav("x-navabout");
@@ -310,6 +332,13 @@ async function recordsPage() {
 
   } else if (location.pathname == "/view/records") {
     recordsPage();
+
+  } else if (location.pathname == "/view/dnssec") {
+    dnssecPage();
+  } else if (location.pathname == "/view/blog") {
+    blogPage();
+  }else {
+    window.location.href = '/';
   }
 
 })();
