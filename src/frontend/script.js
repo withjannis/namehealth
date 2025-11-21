@@ -104,7 +104,7 @@ function elDataItem(label, data) {
   d.innerHTML = `
     <div style="font-size:0.85rem;color:var(--muted)">
     <strong>${escapeHtml(label)}</strong>
-    (${escapeHtml(description)})
+    - ${escapeHtml(description)}
     </div>
     <div style="margin-top:6px;display:flex;align-items:center;gap:6px">
       <span class="value" style="overflow: hidden; text-overflow: ellipsis;">${escapeHtml(values)}</span>

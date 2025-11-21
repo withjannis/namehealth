@@ -77,12 +77,25 @@ html,body{
 /* ensure footer is pushed to bottom when content is short */
 #x-footer {display: block; margin-top: auto; }
 
-#x-records-search { padding:8px 0 18px 0; }
-h1#x-domain-name { margin:0 0 6px 0; font-weight:600; letter-spacing:0.2px; color:var(--text); }
-.subtitle{ color:var(--muted); font-size:0.95rem; margin-bottom:12px;
-  min-height: 1.6rem;        /* reserve vertical space */
+#x-records-search { padding:0 0 18px 0; }
+#x-domain-name {
+  margin:0 0 6px 0;
+  font-weight:600;
+  letter-spacing:0.2px;
+  color:var(--text);
+}
+
+#x-about h1 {
+  margin:0 0 6px 0;
+  font-weight:600;
+  letter-spacing:0.2px;
+  color:var(--text);
+}
+#x-records-subtitle{
+  color:var(--muted);
+  font-size:0.95rem; margin-bottom:12px;
+  min-height: 1.6rem;
   line-height: 1.6rem;
-  display:block;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -90,7 +103,13 @@ h1#x-domain-name { margin:0 0 6px 0; font-weight:600; letter-spacing:0.2px; colo
 }
 
 /* search bar placed below title */
-form#x-records-search-form{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px }
+form#x-records-search-form{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:12px
+}
+
 form#x-records-search-form input, form#x-records-search-form select {
   background: var(--panel);
   color: var(--text);
