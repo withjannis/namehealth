@@ -138,7 +138,7 @@ async def view_domain():
 @app.get("/api/v1/about", response_class=fastapi.responses.JSONResponse)
 async def view_domain():
     """Serve test domain file."""
-    about_html = """Hello! This is withjannis. You can find me and this project on Github <a href="https://github.com/withjannis">github.com/withjannis</a>.
+    about_html = """<h1>About</h1>Hello! This is withjannis. You can find me and this project on Github <a href="https://github.com/withjannis">github.com/withjannis</a>.
     This is my personal project. It should help Infrastructure Engineers help debug their DNS Infrastructure from an outside view.
     """
     data = {
