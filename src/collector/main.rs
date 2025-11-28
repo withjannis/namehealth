@@ -14,6 +14,7 @@ use chrono::Utc;
 
 mod dns;
 // mod db;
+mod testing;
 
 async fn get_auth_ns() {
     // Placeholder for future implementation
