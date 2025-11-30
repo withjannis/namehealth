@@ -1,0 +1,131 @@
+>>> dig Name(zg.ch.) Rtype::A @ROOOOOOOOOT
+; zg.ch.        A       IN
+ch. 172800 IN NS b.nic.ch.
+b.nic.ch. 172800 IN A 130.59.31.43
+
+>>> dig Name(zg.ch.) Rtype::A @CCCCCCCHHHHHHHHHHHHH
+; zg.ch.        A       IN
+zg.ch. 3600 IN NS a.zg-ns.net.
+b.zg-ns.ch. 3600 IN A 185.119.138.12
+
+>>> dig Name(a.zg-ns.net.) Rtype::A @ROOOOOOOOOT
+; a.zg-ns.net.  A       IN
+net. 172800 IN NS m.gtld-servers.net.
+m.gtld-servers.net. 172800 IN A 192.55.83.30
+
+>>> dig Name(a.zg-ns.net.) Rtype::A @NNNNNEEEEEEETTTTTTTTT
+; a.zg-ns.net.  A       IN
+zg-ns.net. 172800 IN NS a.zg-ns.ch.
+a.zg-ns.net. 172800 IN A 176.97.158.100
+
+>>> dig Name(a.zg-ns.ch.) Rtype::A @ROOOOOOOOOT
+; a.zg-ns.ch.   A       IN
+ch. 172800 IN NS b.nic.ch.
+b.nic.ch. 172800 IN A 130.59.31.43
+
+>>> dig Name(a.zg-ns.ch.) Rtype::A @CCCCCCCHHHHHHHHHHHHH
+; a.zg-ns.ch.   A       IN
+zg-ns.ch. 3600 IN NS a.zg-ns.net.
+a.zg-ns.ch. 3600 IN A 192.174.68.100
+
+>>> dig Name(a.zg-ns.net.) Rtype::A @ROOOOOOOOOT
+; a.zg-ns.net.  A       IN
+net. 172800 IN NS m.gtld-servers.net.
+m.gtld-servers.net. 172800 IN A 192.55.83.30
+
+>>> dig Name(a.zg-ns.net.) Rtype::A @NNNNNEEEEEEETTTTTTTTT
+; a.zg-ns.net.  A       IN
+zg-ns.net. 172800 IN NS a.zg-ns.ch.
+a.zg-ns.net. 172800 IN A 176.97.158.100
+
+>>> dig Name(a.zg-ns.ch.) Rtype::A @ROOOOOOOOOT
+; a.zg-ns.ch.   A       IN
+ch. 172800 IN NS b.nic.ch.
+b.nic.ch. 172800 IN A 130.59.31.43
+
+>>> dig Name(a.zg-ns.ch.) Rtype::A @CCCCCCCHHHHHHHHHHHHH
+; a.zg-ns.ch.   A       IN
+zg-ns.ch. 3600 IN NS a.zg-ns.net.
+a.zg-ns.ch. 3600 IN A 192.174.68.100
+
+>>> dig Name(a.zg-ns.net.) Rtype::A @ROOOOOOOOOT
+; a.zg-ns.net.  A       IN
+net. 172800 IN NS m.gtld-servers.net.
+m.gtld-servers.net. 172800 IN A 192.55.83.30
+
+>>> dig Name(a.zg-ns.net.) Rtype::A @NNNNNEEEEEEETTTTTTTTT
+; a.zg-ns.net.  A       IN
+zg-ns.net. 172800 IN NS a.zg-ns.ch.
+a.zg-ns.net. 172800 IN A 176.97.158.100
+
+>>> dig Name(a.zg-ns.ch.) Rtype::A @ROOOOOOOOOT
+; a.zg-ns.ch.   A       IN
+ch. 172800 IN NS b.nic.ch.
+b.nic.ch. 172800 IN A 130.59.31.43
+
+>>> dig Name(a.zg-ns.ch.) Rtype::A @CCCCCCCHHHHHHHHHHHHH
+; a.zg-ns.ch.   A       IN
+zg-ns.ch. 3600 IN NS a.zg-ns.net.
+a.zg-ns.ch. 3600 IN A 192.174.68.100
+
+>>> dig Name(a.zg-ns.net.) Rtype::A @ROOOOOOOOOT
+; a.zg-ns.net.  A       IN
+net. 172800 IN NS m.gtld-servers.net.
+m.gtld-servers.net. 172800 IN A 192.55.83.30
+
+>>> dig Name(a.zg-ns.net.) Rtype::A @NNNNNEEEEEEETTTTTTTTT
+; a.zg-ns.net.  A       IN
+zg-ns.net. 172800 IN NS a.zg-ns.ch.
+a.zg-ns.net. 172800 IN A 176.97.158.100
+
+>>> dig Name(a.zg-ns.ch.) Rtype::A @ROOOOOOOOOT
+; a.zg-ns.ch.   A       IN
+ch. 172800 IN NS b.nic.ch.
+b.nic.ch. 172800 IN A 130.59.31.43
+
+>>> dig Name(a.zg-ns.ch.) Rtype::A @CCCCCCCHHHHHHHHHHHHH
+; a.zg-ns.ch.   A       IN
+zg-ns.ch. 3600 IN NS b.zg-ns.ch.
+a.zg-ns.ch. 3600 IN A 192.174.68.100
+
+>>> dig Name(a.zg-ns.ch.) Rtype::A @185.119.138.12:53
+; a.zg-ns.ch.   A       IN
+a.zg-ns.ch. 86400 IN A 192.174.68.100
+
+>>> dig Name(a.zg-ns.net.) Rtype::A @192.174.68.100:53
+; a.zg-ns.net.  A       IN
+a.zg-ns.net. 3600 IN A 176.97.158.100
+
+>>> dig Name(a.zg-ns.ch.) Rtype::A @176.97.158.100:53
+; a.zg-ns.ch.   A       IN
+a.zg-ns.ch. 86400 IN A 192.174.68.100
+
+>>> dig Name(a.zg-ns.net.) Rtype::A @192.174.68.100:53
+; a.zg-ns.net.  A       IN
+a.zg-ns.net. 3600 IN A 176.97.158.100
+
+>>> dig Name(a.zg-ns.ch.) Rtype::A @176.97.158.100:53
+; a.zg-ns.ch.   A       IN
+a.zg-ns.ch. 86400 IN A 192.174.68.100
+
+>>> dig Name(a.zg-ns.net.) Rtype::A @192.174.68.100:53
+; a.zg-ns.net.  A       IN
+a.zg-ns.net. 3600 IN A 176.97.158.100
+
+>>> dig Name(a.zg-ns.ch.) Rtype::A @176.97.158.100:53
+; a.zg-ns.ch.   A       IN
+a.zg-ns.ch. 86400 IN A 192.174.68.100
+
+>>> dig Name(a.zg-ns.net.) Rtype::A @192.174.68.100:53
+; a.zg-ns.net.  A       IN
+a.zg-ns.net. 3600 IN A 176.97.158.100
+
+>>> dig Name(zg.ch.) Rtype::A @176.97.158.100:53
+; zg.ch.        A       IN
+zg.ch. 300 IN A 151.101.66.132
+zg.ch. 300 IN A 151.101.2.132
+zg.ch. 300 IN A 151.101.130.132
+zg.ch. 300 IN A 151.101.242.132
+zg.ch. 300 IN A 151.101.194.132
+
+Ok([Record { owner: ParsedName(zg.ch.), class: Class::IN, ttl: Ttl(300), data: A { addr: 151.101.66.132 } }, Record { owner: ParsedName(zg.ch.), class: Class::IN, ttl: Ttl(300), data: A { addr: 151.101.2.132 } }, Record { owner: ParsedName(zg.ch.), class: Class::IN, ttl: Ttl(300), data: A { addr: 151.101.130.132 } }, Record { owner: ParsedName(zg.ch.), class: Class::IN, ttl: Ttl(300), data: A { addr: 151.101.242.132 } }, Record { owner: ParsedName(zg.ch.), class: Class::IN, ttl: Ttl(300), data: A { addr: 151.101.194.132 } }])

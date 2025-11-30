@@ -9,7 +9,8 @@ use domain::base::{
     ParseRecordData,
     ParsedName,
     Record,
-    Rtype, ToName,
+    Rtype,
+    ToName,
 };
 
 use domain::rdata;
@@ -18,9 +19,8 @@ use domain::net::client::{ dgram, dgram_stream, multi_stream, stream };
 use domain::net::client::protocol::{ TcpConnect, UdpConnect };
 use domain::net::client::request::{ ComposeRequest, RequestMessage, SendRequest };
 
-use std::arch::x86_64;
 use std::borrow::Cow;
-use std::rc;
+
 use once_cell::sync::Lazy;
 use std::net::SocketAddr;
 
@@ -31,24 +31,26 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use log;
-use futures::future::{FutureExt, BoxFuture};
+use futures::future::{ FutureExt, BoxFuture };
 
 // replace the broken async get_root_nameservers with a static Lazy vector
-static ROOT_NS: Lazy<Vec<SocketAddr>> = Lazy::new(|| vec![
-    SocketAddr::new(IpAddr::from_str("198.41.0.4").unwrap(), 53),
-    SocketAddr::new(IpAddr::from_str("170.247.170.2").unwrap(), 53),
-    SocketAddr::new(IpAddr::from_str("192.33.4.12").unwrap(), 53),
-    SocketAddr::new(IpAddr::from_str("199.7.91.13").unwrap(), 53),
-    SocketAddr::new(IpAddr::from_str("192.203.230.10").unwrap(), 53),
-    SocketAddr::new(IpAddr::from_str("192.5.5.241").unwrap(), 53),
-    SocketAddr::new(IpAddr::from_str("192.112.36.4").unwrap(), 53),
-    SocketAddr::new(IpAddr::from_str("198.97.190.53").unwrap(), 53),
-    SocketAddr::new(IpAddr::from_str("192.36.148.17").unwrap(), 53),
-    SocketAddr::new(IpAddr::from_str("192.58.128.30").unwrap(), 53),
-    SocketAddr::new(IpAddr::from_str("193.0.14.129").unwrap(), 53),
-    SocketAddr::new(IpAddr::from_str("199.7.83.42").unwrap(), 53),
-    SocketAddr::new(IpAddr::from_str("202.12.27.33").unwrap(), 53),
-]);
+static ROOT_NS: Lazy<Vec<SocketAddr>> = Lazy::new(||
+    vec![
+        SocketAddr::new(IpAddr::from_str("198.41.0.4").unwrap(), 53),
+        SocketAddr::new(IpAddr::from_str("170.247.170.2").unwrap(), 53),
+        SocketAddr::new(IpAddr::from_str("192.33.4.12").unwrap(), 53),
+        SocketAddr::new(IpAddr::from_str("199.7.91.13").unwrap(), 53),
+        SocketAddr::new(IpAddr::from_str("192.203.230.10").unwrap(), 53),
+        SocketAddr::new(IpAddr::from_str("192.5.5.241").unwrap(), 53),
+        SocketAddr::new(IpAddr::from_str("192.112.36.4").unwrap(), 53),
+        SocketAddr::new(IpAddr::from_str("198.97.190.53").unwrap(), 53),
+        SocketAddr::new(IpAddr::from_str("192.36.148.17").unwrap(), 53),
+        SocketAddr::new(IpAddr::from_str("192.58.128.30").unwrap(), 53),
+        SocketAddr::new(IpAddr::from_str("193.0.14.129").unwrap(), 53),
+        SocketAddr::new(IpAddr::from_str("199.7.83.42").unwrap(), 53),
+        SocketAddr::new(IpAddr::from_str("202.12.27.33").unwrap(), 53)
+    ]
+);
 
 pub fn get_root_nameservers() -> &'static [SocketAddr] {
     &ROOT_NS
@@ -67,32 +69,32 @@ pub fn get_root_nameservers() -> &'static [SocketAddr] {
 //         Some(v) => v,
 //         None => get_root_nameservers().to_vec(),
 //     };
-// 
+//
 //     println!("Getting hierarchical records for {:?} {:?} using NS {:?}", na, rt, ns);
-// 
+//
 //     for ns_addr in ns {
 //         println!("Querying NS: {:?}", ns_addr);
-// 
+//
 //         let dnsmsg = get_dns_msg(ns_addr, na.clone(), rt).await;
-// 
+//
 //         // check if the resolver returned an answer
 //         if dnsmsg.header_counts().ancount() > 0 {
 //             // Server returned something in the ANSWER section.
 //             println!("Got answer from NS: {:?} for {:?}", ns_addr, na);
 //             let mut rtrn_rcrds: Vec<Record<ParsedName<bytes::Bytes>, RecordData>> = vec![];
-// 
+//
 //             let rcrds = dnsmsg.answer().expect("").limit_to_in::<RecordData>();
-// 
+//
 //             for rcrd in rcrds {
 //                 let rcrd = rcrd.expect("");
 //                 println!("Found record: {:?}", rcrd);
 //                 rtrn_rcrds.push(rcrd);
 //             }
 //             return Ok(rtrn_rcrds);
-// 
+//
 //         } else if dnsmsg.header_counts().nscount() > 0 {
 //             // Server returned something in the AUTHORITY section.
-// 
+//
 //             let mut next_ns_hierarchie: Vec<SocketAddr> = vec![];
 //             println!("No answer, checking authority section for NS: {:?}", ns_addr);
 //             let auth_rcrd_list = dnsmsg.authority().expect("").limit_to_in::<rdata::Ns<_>>();
@@ -115,7 +117,7 @@ pub fn get_root_nameservers() -> &'static [SocketAddr] {
 //                     }
 //                 }
 //             }
-//             
+//
 //             if dnsmsg.header_counts().adcount() == 0 || next_ns_hierarchie.len() == 0 {
 //                 println!("Didn't find any ips for nameservers in additional section.");
 //                 println!("Requesting ips directly.");
@@ -127,16 +129,16 @@ pub fn get_root_nameservers() -> &'static [SocketAddr] {
 //                         next_ns_hierarchie.push(ipv4);
 //                     }
 //                 }
-// 
+//
 //             }
-// 
+//
 //             println!("Starting next recursion with {:?} nameservers.", next_ns_hierarchie);
 //             return Box::pin(get_hierarchical_rcrds::<RecordData>(na, rt, Some(next_ns_hierarchie))).await;
-// 
+//
 //         } else {
 //             println!("No usefull answer/authoritative/additional from NS: {:?}", ns_addr);
 //         }
-// 
+//
 //     }
 //     Err(())
 // }
@@ -144,8 +146,8 @@ pub fn get_root_nameservers() -> &'static [SocketAddr] {
 pub async fn get_hierarchical_rcrds<RecordData>(
     na: Name<Vec<u8>>,
     rt: Rtype, // record type
-    base_ns: Option<Vec<SocketAddr>>,
-// ) -> Vec<Record<ParsedName<bytes::Bytes>, RecordData>>
+    base_ns: Option<Vec<SocketAddr>>
+    // ) -> Vec<Record<ParsedName<bytes::Bytes>, RecordData>>
 ) -> Result<Vec<Record<ParsedName<bytes::Bytes>, RecordData>>, ()>
     where for<'a> RecordData: Debug + ParseRecordData<'a, Bytes>
 {
@@ -158,7 +160,6 @@ pub async fn get_hierarchical_rcrds<RecordData>(
     };
 
     for ns_addr in ns {
-
         log::debug!("send request using {:?}", ns_addr);
         let dnsmsg = get_dns_msg(ns_addr, na.clone(), rt).await;
         println!("{}", dnsmsg.display_dig_style());
@@ -178,7 +179,6 @@ pub async fn get_hierarchical_rcrds<RecordData>(
 
             log::debug!("returning records {:?}", rtrn_rcrds);
             return Ok(rtrn_rcrds);
-
         } else if dnsmsg.header_counts().nscount() > 0 {
             // Server returned something in the AUTHORITY section.
 
@@ -186,18 +186,14 @@ pub async fn get_hierarchical_rcrds<RecordData>(
 
             let mut ans: Vec<SocketAddr> = vec![]; // authority nameservers
 
-            let mut auth_rcrd_list = dnsmsg
-                .authority()
-                .expect("")
-                .limit_to_in::<rdata::Ns<_>>();
+            let mut auth_rcrd_list = dnsmsg.authority().expect("").limit_to_in::<rdata::Ns<_>>();
 
             loop {
-                
-                let next_ns_rcrd= match auth_rcrd_list.next() {
-                    Some(x) => {
-                        x.expect("Record parse failed.")
-                    },
-                    None => break,
+                let next_ns_rcrd = match auth_rcrd_list.next() {
+                    Some(x) => { x.expect("Record parse failed.") }
+                    None => {
+                        break;
+                    }
                 };
 
                 log::debug!("nameserver {:?} selected", next_ns_rcrd.data().nsdname());
@@ -210,11 +206,10 @@ pub async fn get_hierarchical_rcrds<RecordData>(
                     log::debug!("additional section received");
 
                     for add_rcrd in add_section {
-
-
                         let add_rcrd = add_rcrd.expect("");
-                        if add_rcrd.owner() == next_ns_rcrd.data().nsdname()
-                            && add_rcrd.rtype() == Rtype::A
+                        if
+                            add_rcrd.owner() == next_ns_rcrd.data().nsdname() &&
+                            add_rcrd.rtype() == Rtype::A
                         {
                             let a_rcrd = add_rcrd.to_record::<rdata::A>().expect("").unwrap();
                             log::debug!("record found {:?}", a_rcrd);
@@ -228,37 +223,40 @@ pub async fn get_hierarchical_rcrds<RecordData>(
 
                 // request name directly
                 if dnsmsg.header_counts().adcount() == 0 || ans.len() == 0 {
-
-                    log::debug!("requesting {:?} directly because not in additional section", next_ns_rcrd.data().nsdname());
+                    log::debug!(
+                        "requesting {:?} directly because not in additional section",
+                        next_ns_rcrd.data().nsdname()
+                    );
 
                     let ns_a_rcrds = Box::pin(
                         get_hierarchical_rcrds::<rdata::A>(
                             next_ns_rcrd.data().nsdname().to_name(),
                             Rtype::A,
-                            None)
-                        ).await;
+                            None
+                        )
+                    ).await;
 
                     for rcrd in ns_a_rcrds.expect("") {
                         let ipv4 = SocketAddr::new(IpAddr::V4(rcrd.data().addr()), 53);
                         ans.push(ipv4);
-                    } 
-
+                    }
                 }
 
                 if ans.len() != 0 {
-                    log::debug!("next recursion with {:?} {:?} nameservers.", ans, next_ns_rcrd.data().nsdname());
+                    log::debug!(
+                        "next recursion with {:?} {:?} nameservers.",
+                        ans,
+                        next_ns_rcrd.data().nsdname()
+                    );
                     return Box::pin(get_hierarchical_rcrds::<RecordData>(na, rt, Some(ans))).await;
                 }
-
             } // loop end
 
             // if no next()
             eprintln!("You are cooked!");
-
         } else {
             log::debug!("no answer/authoritative/additional from NS: {:?}", ns_addr);
         }
-
     }
     return Err(());
 }
@@ -344,12 +342,14 @@ pub async fn get_dns_rcrd<RecordData>(
     records
 }
 
-
 // Replace the recursive async fn with a boxed-returning function to allow recursion.
 pub fn get_auth_ns(
     na: Name<Vec<u8>>,
     base_ns: Option<Vec<SocketAddr>>
-) -> BoxFuture<'static, Vec<Record<ParsedName<bytes::Bytes>, rdata::Ns<ParsedName<bytes::Bytes>>>>> {
+) -> BoxFuture<
+    'static,
+    Vec<Record<ParsedName<bytes::Bytes>, rdata::Ns<ParsedName<bytes::Bytes>>>>
+> {
     Box::pin(async move {
         // use borrowed slice when possible to avoid copying ROOT_NS
         let ns_cow: Cow<'_, [SocketAddr]> = match base_ns {
@@ -364,7 +364,9 @@ pub fn get_auth_ns(
 
             if dnsmsg.header_counts().ancount() > 0 {
                 let rcrds = dnsmsg.answer().expect("").limit_to_in::<rdata::Ns<_>>();
-                let mut result: Vec<Record<ParsedName<bytes::Bytes>, rdata::Ns<ParsedName<bytes::Bytes>>>> = vec![];
+                let mut result: Vec<
+                    Record<ParsedName<bytes::Bytes>, rdata::Ns<ParsedName<bytes::Bytes>>>
+                > = vec![];
 
                 for rcrd in rcrds {
                     let rcrd = rcrd.expect("");
@@ -387,8 +389,9 @@ pub fn get_auth_ns(
                         for add_rcrd in dnsmsg.additional().expect("") {
                             let add_rcrd = add_rcrd.expect("");
 
-                            if add_rcrd.owner() == auth_rcrd.data().nsdname()
-                                && add_rcrd.rtype() == Rtype::A
+                            if
+                                add_rcrd.owner() == auth_rcrd.data().nsdname() &&
+                                add_rcrd.rtype() == Rtype::A
                             {
                                 let a_rcrd = add_rcrd.to_record::<rdata::A>().expect("").unwrap();
                                 let ipv4 = SocketAddr::new(IpAddr::V4(a_rcrd.data().addr()), 53);
@@ -397,19 +400,24 @@ pub fn get_auth_ns(
                             }
                         }
                         if !found_ip {
-                            println!("No A record found in additional section for NS: {:?}", auth_rcrd.data().nsdname());
+                            println!(
+                                "No A record found in additional section for NS: {:?}",
+                                auth_rcrd.data().nsdname()
+                            );
                             println!("Need to resolve NS name to IP separately");
                             let ns_dnsmsg = get_dns_msg(ns_addr, na.clone(), Rtype::A).await;
                             let a_rcrds = ns_dnsmsg.answer().expect("").limit_to_in::<rdata::A>();
                             for a_rcrd in a_rcrds {
                                 let a_rcrd = a_rcrd.expect("");
                                 if a_rcrd.owner() == auth_rcrd.data().nsdname() {
-                                    let ipv4 = SocketAddr::new(IpAddr::V4(a_rcrd.data().addr()), 53);
+                                    let ipv4 = SocketAddr::new(
+                                        IpAddr::V4(a_rcrd.data().addr()),
+                                        53
+                                    );
                                     auth_ns.push(ipv4);
                                 }
                             }
                         }
-                        
                     }
                     // recursive call is allowed now because function returns a boxed future
                     return get_auth_ns(na.clone(), Some(auth_ns)).await;
@@ -420,7 +428,6 @@ pub fn get_auth_ns(
         vec![]
     })
 }
-
 
 mod tests {
     use super::*;
