@@ -206,9 +206,14 @@ impl NhResolver {
                         }
                     }
                     // create new request
-                    let q = NhQuery::new(nhq.na.clone(), nhq.rt, Some(nxt_auth_ns)).await;
+                    let q = NhQuery::new(nhq.na.clone(), nhq.rt, Some(nxt_auth_ns.clone())).await;
 
-                    return Box::pin(self._get_rcrds(q)).await;
+                    match Box::pin(self._get_rcrds(q)).await {
+                        Ok(o) => return Ok(o),
+                        Err(_) => {
+                            eprintln!("Resultion for {} did not work. Moving on.", nhq.na);
+                        }
+                    }
                 }
             }
         }
