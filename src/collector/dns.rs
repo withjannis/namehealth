@@ -1,23 +1,17 @@
-use std::{ vec, str::FromStr };
+use std::{str::FromStr, vec};
 
-use std::net::{ IpAddr, SocketAddr };
+use std::net::{IpAddr, SocketAddr};
 
 use domain::base::ToName;
 use domain::base::{
-    Message,
-    MessageBuilder,
-    Name,
-    Rtype,
-    Record,
-    ParsedName,
-    message::RecordSection,
+    Message, MessageBuilder, Name, ParsedName, Record, Rtype, message::RecordSection,
 };
 
-use domain::net::client::{ dgram, dgram_stream, multi_stream, stream };
-use domain::net::client::protocol::{ TcpConnect, UdpConnect };
-use domain::net::client::request::{ ComposeRequest, RequestMessage, SendRequest };
+use domain::net::client::protocol::{TcpConnect, UdpConnect};
+use domain::net::client::request::{ComposeRequest, RequestMessage, SendRequest};
+use domain::net::client::{dgram, dgram_stream, multi_stream, stream};
 
-use domain::rdata::{ A, Ns };
+use domain::rdata;
 
 use rand;
 
@@ -26,30 +20,34 @@ use std::time::Duration;
 async fn chaos_monkey(info: &str) -> bool {
     let x = rand::random::<u8>();
     if 10 > x {
-        println!("⚠️ {}: trigger error {}", info, x);
+        eprintln!("⚠️ {}: trigger error {}", info, x);
         return true;
     };
     return false;
 }
 
 #[derive(Debug, Clone)]
-struct NhQuery {
+pub struct NhQuery {
     na: Name<Vec<u8>>,
     rt: Rtype,
     ns: Vec<SocketAddr>,
 }
 
 impl NhQuery {
-    async fn new(a: Name<Vec<u8>>, b: Rtype, c: Option<Vec<SocketAddr>>) -> Self {
-        NhQuery { na: a, rt: b, ns: c.unwrap_or(NhResolver::root_ns().await) }
+    pub async fn new(a: Name<Vec<u8>>, b: Rtype, c: Option<Vec<SocketAddr>>) -> Self {
+        NhQuery {
+            na: a,
+            rt: b,
+            ns: c.unwrap_or(NhResolver::root_ns().await),
+        }
     }
 }
 
 #[derive(Debug)]
-struct NhResolver {}
+pub struct NhResolver {}
 
 impl NhResolver {
-    async fn new() -> NhResolver {
+    pub async fn new() -> NhResolver {
         NhResolver {}
     }
 
@@ -67,22 +65,24 @@ impl NhResolver {
             SocketAddr::new(IpAddr::from_str("192.58.128.30").unwrap(), 53),
             SocketAddr::new(IpAddr::from_str("193.0.14.129").unwrap(), 53),
             SocketAddr::new(IpAddr::from_str("199.7.83.42").unwrap(), 53),
-            SocketAddr::new(IpAddr::from_str("202.12.27.33").unwrap(), 53)
+            SocketAddr::new(IpAddr::from_str("202.12.27.33").unwrap(), 53),
         ]
     }
 
-    async fn _sctn_rcrds(
+    async fn _sctn_rcrds<RecordData>(
         &self,
         a: &RecordSection<'_, bytes::Bytes>,
-        b: &mut Vec<Record<ParsedName<bytes::Bytes>, A>>
-    ) -> Result<(), ()> {
-
+        b: &mut Vec<Record<ParsedName<bytes::Bytes>, RecordData>>,
+    ) -> Result<(), ()>
+    where
+        for<'a> RecordData: std::fmt::Debug + domain::base::ParseRecordData<'a, bytes::Bytes>,
+    {
         // fuzzing my code so trigger errors on purpose
         if chaos_monkey("_sctn_rcrds").await {
             return Err(());
         }
 
-        let answ_sec = a.limit_to_in::<A>();
+        let answ_sec = a.limit_to_in::<RecordData>();
 
         for rcrd_res in answ_sec {
             let rcrd = match rcrd_res {
@@ -102,34 +102,38 @@ impl NhResolver {
         &self,
         a: &RecordSection<'_, bytes::Bytes>,
         b: &RecordSection<'_, bytes::Bytes>,
-        c: &mut Vec<SocketAddr>
+        c: &mut Vec<SocketAddr>,
     ) -> Result<(), ()> {
-
         // fuzzing my code so trigger errors on purpose
         if chaos_monkey("_ns_a_rcrds").await {
             return Err(());
         }
 
-        let athrty_sec = a.limit_to_in::<Ns<_>>();
-        let addtnl_sec = b.limit_to_in::<A>();
+        let athrty_sec = a.limit_to_in::<rdata::Ns<_>>();
+        let addtnl_sec = b.limit_to_in::<rdata::A>();
 
         for ns_rcrd_res in athrty_sec {
             let ns_rcrd = ns_rcrd_res.expect("");
             for a_rcrd_res in addtnl_sec.clone() {
                 let a_rcrd = a_rcrd_res.expect("");
                 if ns_rcrd.data().nsdname() == a_rcrd.owner() {
-                    c.push(SocketAddr::new(a_rcrd.data().addr().try_into().unwrap(), 53));
+                    c.push(SocketAddr::new(
+                        a_rcrd.data().addr().try_into().unwrap(),
+                        53,
+                    ));
                 }
             }
         }
         return if c.len() > 0 { Ok(()) } else { Err(()) };
     }
 
-    async fn _get_rcrds(
+    async fn _get_rcrds<RecordData>(
         &self,
-        nhq: NhQuery
-    ) -> Result<Vec<Record<ParsedName<bytes::Bytes>, domain::rdata::A>>, ()> {
-
+        nhq: NhQuery,
+    ) -> Result<Vec<Record<ParsedName<bytes::Bytes>, RecordData>>, ()>
+    where
+        for<'a> RecordData: std::fmt::Debug + domain::base::ParseRecordData<'a, bytes::Bytes>,
+    {
         // fuzzing my code so trigger errors on purpose
         if chaos_monkey("_get_rcrds").await {
             return Err(());
@@ -141,17 +145,23 @@ impl NhResolver {
 
             // prepare all sections (answer, authority & additional)
             let answr_sctn = rspns.answer().expect("Answer Section failed to parse!");
-            let athrty_sctn = rspns.authority().expect("Authority Section failed to parse!");
-            let addtnl_sctn = rspns.additional().expect("Additional Section failed to parse!");
+            let athrty_sctn = rspns
+                .authority()
+                .expect("Authority Section failed to parse!");
+            let addtnl_sctn = rspns
+                .additional()
+                .expect("Additional Section failed to parse!");
 
             // check if contains answer
             if rspns.header_counts().ancount() > 0 {
-                let mut rslt_rcrds: Vec<
-                    Record<ParsedName<bytes::Bytes>, domain::rdata::A>
-                > = vec![];
+                let mut rslt_rcrds: Vec<Record<ParsedName<bytes::Bytes>, RecordData>> = vec![];
 
                 // extract records from section into vector
-                if self._sctn_rcrds(&answr_sctn, &mut rslt_rcrds).await.is_ok() {
+                if self
+                    ._sctn_rcrds::<RecordData>(&answr_sctn, &mut rslt_rcrds)
+                    .await
+                    .is_ok()
+                {
                     println!("RESULT {:?}", rslt_rcrds);
                     return Ok(rslt_rcrds);
                 } else {
@@ -164,51 +174,56 @@ impl NhResolver {
 
                 let mut nxt_auth_ns: Vec<SocketAddr> = vec![];
                 if rspns.header_counts().adcount() > 0 {
-                    match self._ns_a_rcrds(&athrty_sctn, &addtnl_sctn, &mut nxt_auth_ns).await {
+                    match self
+                        ._ns_a_rcrds(&athrty_sctn, &addtnl_sctn, &mut nxt_auth_ns)
+                        .await
+                    {
                         Ok(_) => (),
                         Err(_) => {
                             eprintln!("Extracting Nameserver with Glue was not possible.");
                         }
                     }
                 }
-                let mut ns_iterator = athrty_sctn.limit_to_in::<Ns<_>>();
+                let mut ns_iterator = athrty_sctn.limit_to_in::<rdata::Ns<_>>();
                 loop {
                     if nxt_auth_ns.len() == 0 {
                         let x = match ns_iterator.next() {
                             Some(s) => {
                                 println!("next ns is {:?}", s);
                                 s
-                            },
+                            }
                             None => {
                                 break;
                             }
                         };
 
                         let y = x.expect("");
-                        let a_rcrd_q = NhQuery::new(
-                            y.data().nsdname().to_name(),
-                            Rtype::A,
-                            None
-                        ).await;
+                        let a_rcrd_q =
+                            NhQuery::new(y.data().nsdname().to_name(), Rtype::A, None).await;
 
-                        let a_rcrd_rspns = match Box::pin(self._get_rcrds(a_rcrd_q)).await {
-                            Ok(o) => o,
-                            Err(_) => {
-                                eprintln!("Failed to query ip for nameserver {}", y.data().nsdname());
-                                continue;
-                            }
-                        };
+                        let a_rcrd_rspns =
+                            match Box::pin(self._get_rcrds::<rdata::A>(a_rcrd_q)).await {
+                                Ok(o) => o,
+                                Err(_) => {
+                                    eprintln!(
+                                        "Failed to query ip for nameserver {}",
+                                        y.data().nsdname()
+                                    );
+                                    continue;
+                                }
+                            };
 
                         for a_rcrd in a_rcrd_rspns {
-                            nxt_auth_ns.push(
-                                SocketAddr::new(a_rcrd.data().addr().try_into().unwrap(), 53)
-                            );
+                            nxt_auth_ns.push(SocketAddr::new(
+                                a_rcrd.data().addr().try_into().unwrap(),
+                                53,
+                            ));
                         }
                     }
                     // create new request
                     let q = NhQuery::new(nhq.na.clone(), nhq.rt, Some(nxt_auth_ns.clone())).await;
 
-                    match Box::pin(self._get_rcrds(q)).await {
+                    match Box::pin(self._get_rcrds::<RecordData>(q)).await {
                         Ok(o) => return Ok(o),
                         Err(_) => {
                             eprintln!("Resultion for {} did not work. Moving on.", nhq.na);
@@ -221,14 +236,16 @@ impl NhResolver {
         return Err(());
     }
 
-    async fn query(&self, nhq: NhQuery) -> String {
-        match self._get_rcrds(nhq.clone()).await {
+    pub async fn query<RecordData>(&self, nhq: NhQuery) -> ()
+    where
+        for<'a> RecordData: std::fmt::Debug + domain::base::ParseRecordData<'a, bytes::Bytes>,
+    {
+        match self._get_rcrds::<RecordData>(nhq.clone()).await {
             Ok(o) => {
                 println!("{:?}", o);
             }
             Err(e) => println!("Resultion for {} failed: {:?}", nhq.na, e),
         }
-        "wip".to_string()
     }
 
     // some magic here!
@@ -236,7 +253,7 @@ impl NhResolver {
         &self,
         na: Name<Vec<u8>>,
         rt: Rtype,
-        ns: SocketAddr
+        ns: SocketAddr,
     ) -> Message<bytes::Bytes> {
         let mut msg = MessageBuilder::new_vec();
         msg.header_mut().set_rd(true);
@@ -266,10 +283,8 @@ impl NhResolver {
         dgram_config.set_max_retries(1);
         dgram_config.set_udp_payload_size(Some(1400));
 
-        let dgram_stream_config = dgram_stream::Config::from_parts(
-            dgram_config.clone(),
-            multi_stream_config.clone()
-        );
+        let dgram_stream_config =
+            dgram_stream::Config::from_parts(dgram_config.clone(), multi_stream_config.clone());
 
         let udp_connect = UdpConnect::new(ns);
         let tcp_connect = TcpConnect::new(ns);
@@ -277,7 +292,7 @@ impl NhResolver {
         let (udptcp_conn, transport) = dgram_stream::Connection::with_config(
             udp_connect,
             tcp_connect,
-            dgram_stream_config.clone()
+            dgram_stream_config.clone(),
         );
 
         tokio::spawn(transport.run());
@@ -292,21 +307,4 @@ impl NhResolver {
 
         answer
     }
-}
-
-#[tokio::main]
-async fn main() {
-    println!("INFO: main started");
-    let r = NhResolver::new().await;
-
-    println!("{:?}", r);
-
-    let q = NhQuery::new(
-        domain::base::Name::<Vec<u8>>::from_str("akamai.com.").unwrap(),
-        domain::base::Rtype::A,
-        None
-    ).await;
-
-    let rslt = r.query(q).await;
-    println!("{:?}", rslt);
 }
