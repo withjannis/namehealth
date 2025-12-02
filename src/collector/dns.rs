@@ -143,6 +143,11 @@ impl NhResolver {
             println!("query {} {} @{:?}", nhq.na, nhq.rt, ns);
             let rspns = self._get_msg(nhq.na.clone(), nhq.rt, ns).await;
 
+            if !rspns.no_error() {
+                eprintln!("response contains error code in header");
+                return Err(());
+            }
+
             // prepare all sections (answer, authority & additional)
             let answr_sctn = rspns.answer().expect("Answer Section failed to parse!");
             let athrty_sctn = rspns
@@ -151,6 +156,29 @@ impl NhResolver {
             let addtnl_sctn = rspns
                 .additional()
                 .expect("Additional Section failed to parse!");
+
+            if rspns.header().aa() && rspns.header_counts().ancount() == 0 {
+                // the adns server has no answer for this question.
+                // read the SOA record from authoritative section.
+                let mut v: Vec<Record<ParsedName<bytes::Bytes>, rdata::Soa<_>>> = vec![];
+                let soa_rslt = self
+                    ._sctn_rcrds::<rdata::Soa<_>>(&athrty_sctn, &mut v)
+                    .await;
+                if let Err(e) = soa_rslt {
+                    eprintln!("Reading SOA from AA answer failed with {:?}", e);
+                    return Err(());
+                }
+
+                println!("There exists no record for {}.", nhq.rt);
+                println!("The answer is authoritative and the answer section is empty.");
+                if v.len() == 1 {
+                    println!("The additional section contains the SOA record.\n{:?}", v);
+                }
+                return Ok(vec![]);
+            }
+            //println!("{}", rspns.header().rcode());
+            //println!("{}", rspns.header().opcode());
+            //println!("{:?}", rspns.header());
 
             // check if contains answer
             if rspns.header_counts().ancount() > 0 {
@@ -170,8 +198,6 @@ impl NhResolver {
             }
 
             if rspns.header_counts().nscount() > 0 {
-                println!("authority");
-
                 let mut nxt_auth_ns: Vec<SocketAddr> = vec![];
                 if rspns.header_counts().adcount() > 0 {
                     match self
@@ -236,16 +262,14 @@ impl NhResolver {
         return Err(());
     }
 
-    pub async fn query<RecordData>(&self, nhq: NhQuery) -> ()
+    pub async fn query<RecordData>(
+        &self,
+        nhq: NhQuery,
+    ) -> Result<Vec<Record<ParsedName<bytes::Bytes>, RecordData>>, ()>
     where
         for<'a> RecordData: std::fmt::Debug + domain::base::ParseRecordData<'a, bytes::Bytes>,
     {
-        match self._get_rcrds::<RecordData>(nhq.clone()).await {
-            Ok(o) => {
-                println!("{:?}", o);
-            }
-            Err(e) => println!("Resultion for {} failed: {:?}", nhq.na, e),
-        }
+        return self._get_rcrds::<RecordData>(nhq.clone()).await;
     }
 
     // some magic here!
@@ -306,5 +330,36 @@ impl NhResolver {
         let answer = reply.expect("");
 
         answer
+    }
+}
+
+mod test {
+    #[cfg(test)]
+    use super::*;
+
+    #[tokio::test]
+    async fn test_simple_query() {
+        let r = NhResolver::new().await;
+        let q = NhQuery::new(
+            domain::base::Name::<Vec<u8>>::from_str("cloudflare.com.").unwrap(),
+            domain::base::Rtype::A,
+            None,
+        )
+        .await;
+
+        assert_eq!(r.query::<domain::rdata::A>(q).await.expect("").len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_simple_no_answer() {
+        let r = NhResolver::new().await;
+        let q = NhQuery::new(
+            domain::base::Name::<Vec<u8>>::from_str("www.example.com.").unwrap(),
+            domain::base::Rtype::TXT,
+            None,
+        )
+        .await;
+
+        assert_eq!(r.query::<domain::rdata::Txt<_>>(q).await, Ok(vec![]));
     }
 }

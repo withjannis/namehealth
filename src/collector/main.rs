@@ -10,11 +10,12 @@ async fn main() {
     println!("{:?}", r);
 
     let q = dns::NhQuery::new(
-        domain::base::Name::<Vec<u8>>::from_str("akamai.com.").unwrap(),
-        domain::base::Rtype::SOA,
-        None
-    ).await;
+        domain::base::Name::<Vec<u8>>::from_str("namehealth.org.").unwrap(),
+        domain::base::Rtype::TXT,
+        None,
+    )
+    .await;
 
-    let rslt = r.query::<domain::rdata::Soa<_>>(q).await;
+    let rslt = r.query::<domain::rdata::Txt<_>>(q).await;
     println!("{:?}", rslt);
 }
