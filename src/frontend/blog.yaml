@@ -1,4 +1,13 @@
 posts:
+  - title: Resolver is operational &#128640;
+    published: 2025-11-30T19:00:00+0000
+    content: >
+      Implementing an efficient and high-performing DNS resolver that only uses
+      authoritative nameservers has helped me to understand the fundamentals of
+      DNS even better.</br></br>
+      The next step is to use my newly developed resolver to obtain vital
+      information about the global DNS landscape.
+
   - title: Implementing Rust DNS Collector &#x1F940;
     published: 2025-11-21T21:00:00+0000
     content: >
